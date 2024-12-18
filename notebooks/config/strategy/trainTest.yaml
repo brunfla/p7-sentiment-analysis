@@ -1,0 +1,3 @@
+_target_: "trainTest"
+testSize: 0.2
+randomSeed: 42

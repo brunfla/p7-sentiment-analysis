@@ -1,0 +1,34 @@
+jobs:
+  data-preprocessing:
+    runs-on: local-runner
+    steps:
+      - name: Prétraitement et gestion des données
+        run: python scripts/preprocess_data.py
+
+  model-training:
+    runs-on: local-runner
+    needs: data-preprocessing
+    steps:
+      - name: Automatisation des entraînements
+        run: python scripts/train_model.py
+
+  model-validation:
+    runs-on: local-runner
+    needs: model-training
+    steps:
+      - name: Validation et tests rigoureux
+        run: python scripts/validate_model.py
+
+  model-deployment:
+    runs-on: local-runner
+    needs: model-validation
+    steps:
+      - name: Déploiement continu
+        run: python scripts/deploy_model.py
+
+  model-iteration:
+    runs-on: local-runner
+    needs: model-deployment
+    steps:
+      - name: Amélioration continue
+        run: python scripts/iterate_model.py

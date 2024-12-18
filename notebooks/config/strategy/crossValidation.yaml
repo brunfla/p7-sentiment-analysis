@@ -1,0 +1,3 @@
+_target_: "crossValidation"
+folds: 5
+randomSeed: 42

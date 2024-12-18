@@ -1,0 +1,16 @@
+name: "logistic_regression_model"
+version: "1.0"
+parameters:
+  solver: "liblinear"
+  penalty: "l2"
+  C: 1.0
+mlflow:    
+  trackingUri: "http://127.0.0.1:5000"
+  experiment:
+    name: "p7-sentiment-analysis"
+    run:
+      name: "logistic_regression_run"
+      description: "Training with logistic regression"
+      tags:
+        modelType: "logistic_regression"
+        datasetVersion: "v1.0"

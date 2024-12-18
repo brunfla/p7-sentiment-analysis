@@ -1,0 +1,19 @@
+# Ignore les données et artefacts
+data/
+notebooks/mlartifacts/
+notebooks/mlruns/
+models/
+*.onnx
+*.csv
+
+# Fichiers cachés et temporaires
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+
+# Ignorer les tests et docs dans l'image
+tests/
+docs/
+

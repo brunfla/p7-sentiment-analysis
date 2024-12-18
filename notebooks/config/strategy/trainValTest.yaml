@@ -1,0 +1,4 @@
+_target_: "trainValTest"
+testSize: 0.2
+validationSize: 0.25
+randomSeed: 42

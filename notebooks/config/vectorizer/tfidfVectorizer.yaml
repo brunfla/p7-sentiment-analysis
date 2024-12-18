@@ -1,0 +1,4 @@
+_target_: "tfidfVectorizer"
+stopWords: "english"
+maxFeatures: 1000
+ngramRange: [1, 2]
