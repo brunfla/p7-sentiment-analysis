@@ -7,6 +7,8 @@ jobs:
   setup-environment:
     runs-on: self-hosted
     steps:
+      - name: check conda
+        run: which conda
       - name: Activer l'environnement Conda
         run: source ~/anaconda3/etc/profile.d/conda.sh && conda activate mlops-env
       - name: Vérifier l'environnement activé
