@@ -1,3 +1,8 @@
+on:
+  push:
+    branches:
+      - main  # Exécute le workflow pour les pushs sur la branche `main
+
 jobs:
   setup-environment:
     runs-on: local-runner
