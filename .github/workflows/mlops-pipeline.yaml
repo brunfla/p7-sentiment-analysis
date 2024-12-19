@@ -1,13 +1,22 @@
 jobs:
+  setup-environment:
+    runs-on: local-runner
+    steps:
+      - name: Activer l'environnement Conda
+        run: source ~/anaconda3/etc/profile.d/conda.sh && conda activate mlops-env
+      - name: Vérifier l'environnement activé
+        run: conda info --envs
+
   data-preprocessing:
     runs-on: local-runner
+    needs: setup-environment
     steps:
       - name: Prétraitement et gestion des données
         run: python scripts/preprocess_data.py
 
   model-training:
     runs-on: local-runner
-    needs: data-preprocessing
+    needs: [setup-environment, data-preprocessing]
     steps:
       - name: Automatisation des entraînements
         run: python scripts/train_model.py
@@ -32,3 +41,4 @@ jobs:
     steps:
       - name: Amélioration continue
         run: python scripts/iterate_model.py
+
