@@ -17,7 +17,8 @@ jobs:
     needs: setup-environment
     steps:
       - name: check
-        run: ls
+        run: |
+          ls
       - name: Prétraitement et gestion des données
         run: python scripts/preprocess_data.py
 
