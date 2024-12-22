@@ -13,8 +13,6 @@ jobs:
         run: conda info --envs
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Check internet
-        run: ping google.com
 
   data-preprocessing:
     runs-on: self-hosted
