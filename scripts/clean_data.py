@@ -35,7 +35,10 @@ if not cfg.preprocess.enabled:
 
 # Charger le dataset
 dataset_path = cfg.dataset.input.path  # Utiliser la clé correcte
-df = pd.read_csv(dataset_path)
+df = pd.read_csv(dataset_path, 
+                 header=None, 
+                 names=["id", "timestamp", "date", "query", "user", "tweet"], 
+                 )
 print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
 print(f"\nDataset columns : {df.columns.tolist()}")
 
