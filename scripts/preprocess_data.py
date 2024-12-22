@@ -34,15 +34,12 @@ if not cfg.preprocess.enabled:
     print("\nLe prétraitement est désactivé. Fin du script.")
     exit()
 
-# Charger les paramètres du modèle
-#model_config = cfg.model
-#print(f"\nModèle sélectionné : {model_config.name}")
-#print(f"Paramètres du modèle : {model_config.parameters}")
-
 # Charger le dataset
 dataset_path = cfg.dataset.input.path  # Utiliser la clé correcte
 df = pd.read_csv(dataset_path)
 print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
+
+print(df.head)
 
 # Supprimer les tweets vides (NaN ou chaînes vides)
 df = df[~(df['tweet'].isna() | (df['tweet'].str.strip() == ""))]
