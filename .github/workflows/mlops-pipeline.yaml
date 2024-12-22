@@ -13,6 +13,8 @@ jobs:
         run: conda info --envs
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Check repository
+        run: tree
 
   data-preprocessing:
     runs-on: self-hosted
