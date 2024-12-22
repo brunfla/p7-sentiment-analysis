@@ -22,7 +22,7 @@ if GlobalHydra.instance().is_initialized():
     GlobalHydra.instance().clear()
 
 # Initialiser Hydra avec une nouvelle configuration
-initialize(config_path="../notebook/config", version_base=None)
+initialize(config_path="../notebooks/config", version_base=None)
 cfg = compose(config_name="simple-model-ci-github")
 
 # Afficher la configuration globale
