@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Check repository
-        run: ls * 
+        run: ls */*
 
   data-preprocessing:
     runs-on: self-hosted
