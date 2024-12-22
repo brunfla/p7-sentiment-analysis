@@ -25,7 +25,7 @@ if GlobalHydra.instance().is_initialized():
 initialize(config_path="../notebooks/config", version_base=None)
 cfg = compose(config_name="simple-model-ci-github")
 
- Afficher la configuration globale
+Afficher la configuration globale
 print("Configuration globale :")
 print(cfg)
 
