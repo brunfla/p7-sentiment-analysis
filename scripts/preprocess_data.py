@@ -3,6 +3,7 @@
 
 import pandas as pd
 import re
+import nltk
 
 # Chargement du fichier avec un encodage différent
 df = pd.read_csv("../data/input/training.1600000.processed.noemoticon.utf-8.csv", 
