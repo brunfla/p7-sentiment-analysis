@@ -27,9 +27,11 @@ jobs:
           source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
       - name: Nettoyage des données
         run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
           python scripts/clean_data.py
       - name: Vectorisation
         run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
           python scripts/vectorizer.py
 
   model-training:
