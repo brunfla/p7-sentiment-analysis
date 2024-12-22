@@ -11,6 +11,17 @@ jobs:
         run: source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
       - name: Vérifier l'environnement activé
         run: conda info --envs
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+Assurez-vous que votre workflow inclut une étape pour cloner le repository avec l'action actions/checkout. Exemple :
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
   data-preprocessing:
     runs-on: self-hosted
