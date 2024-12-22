@@ -7,7 +7,6 @@ from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
 import re
 import spacy
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Initialiser Spacy pour la lemmatisation
 nlp = spacy.load("en_core_web_sm")
@@ -26,8 +25,8 @@ initialize(config_path="../notebooks/config", version_base=None)
 cfg = compose(config_name="simple-model-ci-github")
 
 #Afficher la configuration globale
-print("Configuration globale :")
-print(cfg)
+print("Configuration preprocess :")
+print(cfg.preprocess)
 
 # Vérifier si le prétraitement est activé
 if not cfg.preprocess.enabled:
@@ -38,7 +37,6 @@ if not cfg.preprocess.enabled:
 dataset_path = cfg.dataset.input.path  # Utiliser la clé correcte
 df = pd.read_csv(dataset_path)
 print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
-
 print(f"\nDataset columns : {df.columns.tolist()}")
 
 # Supprimer les tweets vides (NaN ou chaînes vides)
@@ -62,22 +60,6 @@ if cfg.preprocess.lemmatization.enabled:
     print("\nLemmatisation terminée.")
 else:
     print("\nLemmatisation désactivée.")
-
-# Vérifier le type de vectorizer configuré
-print("\nConfiguration du vectoriseur TF-IDF...")
-if cfg.vectorizer._target_ == "tfidfVectorizer":
-    vectorizer = TfidfVectorizer(
-        stop_words=cfg.vectorizer.stopWords,
-        max_features=cfg.vectorizer.maxFeatures,
-        ngram_range=tuple(cfg.vectorizer.ngramRange)
-    )
-else:
-    raise KeyError("La configuration 'tfidVectorizer' est absente ou mal définie dans 'vectorizer'.")
-
-# Appliquer fit_transform sur les tweets
-print("\nAppliquer TF-IDF sur les tweets...")
-X = vectorizer.fit_transform(df['tweet'])
-print(f"TF-IDF vectorisation terminée avec {X.shape[1]} caractéristiques.")
 
 # Sauvegarder le dataset nettoyé
 print("\nSauvegarde du dataset...")

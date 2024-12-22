@@ -22,10 +22,15 @@ jobs:
     runs-on: self-hosted
     needs: setup-environment
     steps:
-      - name: Prétraitement et gestion des données
+      - name: Activer l'environnement Conda
         run: |
           source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python scripts/preprocess_data.py
+      - name: Nettoyage des données
+        run: |
+          python scripts/clean_data.py
+      - name: Vectorisation
+        run: |
+          python scripts/vectorizer.py
 
   model-training:
     runs-on: self-hosted
