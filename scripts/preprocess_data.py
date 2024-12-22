@@ -39,7 +39,7 @@ dataset_path = cfg.dataset.input.path  # Utiliser la clé correcte
 df = pd.read_csv(dataset_path)
 print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
 
-print(df.head)
+print(f"\nDataset columns : {df.columns.tolist()}")
 
 # Supprimer les tweets vides (NaN ou chaînes vides)
 df = df[~(df['tweet'].isna() | (df['tweet'].str.strip() == ""))]
