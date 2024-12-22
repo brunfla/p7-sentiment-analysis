@@ -14,13 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-jobs:
-  build:
-    runs-on: self-hosted
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
   data-preprocessing:
     runs-on: self-hosted
     needs: setup-environment
