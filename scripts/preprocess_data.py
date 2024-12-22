@@ -48,5 +48,5 @@ df['tweet_tokenized'] = df['tweet_tokenized'].apply(lambda x: [word for word in 
 
 # In[7]:
 
-df.to_csv("./actions/data_clean.csv", index=False)
+df.to_csv("data/output/data_clean.csv", index=False)
 
