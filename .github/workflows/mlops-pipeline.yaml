@@ -16,6 +16,10 @@ jobs:
     runs-on: self-hosted
     needs: setup-environment
     steps:
+      - name: Test
+        run: |
+          pwd
+          ls
       - name: Prétraitement et gestion des données
         run: python scripts/preprocess_data.py
 
