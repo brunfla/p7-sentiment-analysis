@@ -18,38 +18,44 @@ jobs:
     runs-on: self-hosted
     needs: setup-environment
     steps:
-      - name: Test
-        run: |
-          pwd
-          ls
       - name: Prétraitement et gestion des données
-        run: python scripts/preprocess_data.py
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python scripts/preprocess_data.py
 
   model-training:
     runs-on: self-hosted
     needs: [setup-environment, data-preprocessing]
     steps:
       - name: Automatisation des entraînements
-        run: python scripts/train_model.py
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python scripts/train_model.py
 
   model-validation:
     runs-on: self-hosted
     needs: model-training
     steps:
       - name: Validation et tests rigoureux
-        run: python scripts/validate_model.py
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python scripts/validate_model.py
 
   model-deployment:
     runs-on: self-hosted
     needs: model-validation
     steps:
       - name: Déploiement continu
-        run: python scripts/deploy_model.py
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python scripts/deploy_model.py
 
   model-iteration:
     runs-on: self-hosted
     needs: model-deployment
     steps:
       - name: Amélioration continue
-        run: python scripts/iterate_model.py
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python scripts/iterate_model.py
 
