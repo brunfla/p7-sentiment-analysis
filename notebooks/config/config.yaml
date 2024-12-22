@@ -1,5 +1,6 @@
 defaults:
   - dataset: datasetV1          # Choix du dataset par défaut
+  - preprocess: preProcess
   - strategy: trainValTest      # Stratégie par défaut
   - model: p7-sentiment-analysis/logisticRegression   # Modèle par défaut
   - vectorizer: tfidfVectorizer # Vectorizer par défaut

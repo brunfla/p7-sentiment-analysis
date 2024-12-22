@@ -1,0 +1,4 @@
+enabled: true
+lemmatization:
+  enabled: true
+output:

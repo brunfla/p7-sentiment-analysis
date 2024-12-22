@@ -7,6 +7,13 @@ import pandas as pd
 from omegaconf import DictConfig
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
+import requests
+import subprocess
+import mlflow
+from omegaconf import DictConfig
+from hydra import initialize, compose
+from hydra.core.global_hydra import GlobalHydra
+
 
 # Réinitialiser Hydra si déjà initialisé
 if GlobalHydra.instance().is_initialized():
@@ -32,16 +39,6 @@ print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
 
 
 # #### Charger MLflow
-
-# In[22]:
-import requests
-import subprocess
-import mlflow
-from omegaconf import DictConfig
-from hydra import initialize, compose
-from hydra.core.global_hydra import GlobalHydra
-
-
 def is_mlflow_running(host="127.0.0.1", port=5000):
     """
     Vérifie si le serveur MLflow est en cours d'exécution.
@@ -79,11 +76,6 @@ print("MLflow run started.")
 # ## Etape 2 : Prétraitement 
 
 # #### Suppression des lignes vides
-
-# In[23]:
-
-
-# Suppression des lignes vides
 df[df["tweet"].isna() | (df["tweet"] == "")]
 df = df[~(df['tweet'].isna() | (df['tweet'] == ""))]
 
@@ -257,5 +249,3 @@ elif cfg.hyperparameterOptimization._target_ == "optuna":
 
 else:
     raise ValueError("Unsupported hyperparameter optimization method")
-
-
