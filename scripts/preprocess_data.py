@@ -5,7 +5,7 @@ import pandas as pd
 import re
 
 # Chargement du fichier avec un encodage différent
-df = pd.read_csv("data/input/training.1600000.processed.noemoticon.utf-8.csv", 
+df = pd.read_csv("../data/input/training.1600000.processed.noemoticon.utf-8.csv", 
                  header=None, 
                  names=["id", "timestamp", "date", "query", "user", "tweet"], 
                  )
@@ -48,5 +48,5 @@ df['tweet_tokenized'] = df['tweet_tokenized'].apply(lambda x: [word for word in 
 
 # In[7]:
 
-df.to_csv("data/output/data_clean.csv", index=False)
+df.to_csv("../data/output/data_clean.csv", index=False)
 
