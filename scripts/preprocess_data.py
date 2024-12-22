@@ -25,9 +25,9 @@ if GlobalHydra.instance().is_initialized():
 initialize(config_path="../notebooks/config", version_base=None)
 cfg = compose(config_name="simple-model-ci-github")
 
-# Afficher la configuration globale
-#print("Configuration globale :")
-#print(cfg)
+ Afficher la configuration globale
+print("Configuration globale :")
+print(cfg)
 
 # Vérifier si le prétraitement est activé
 if not cfg.preprocess.enabled:
@@ -83,6 +83,6 @@ X = vectorizer.fit_transform(df['tweet'])
 print(f"TF-IDF vectorisation terminée avec {X.shape[1]} caractéristiques.")
 
 # Sauvegarder le dataset nettoyé
-print("\nSauvegarde du dataset nettoyé...")
-df.to_csv(cfg.dataset.output.path, index=False)
-print(f"\nDataset nettoyé sauvegardé dans {cfg.dataset.output.path}.")
+print("\nSauvegarde du dataset...")
+df.to_csv(cfg.preprocess.output.path, index=False)
+print(f"\nDataset sauvegardé dans {cfg.preprocess.output.path}.")

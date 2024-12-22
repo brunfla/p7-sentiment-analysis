@@ -1,3 +1,5 @@
 enabled: true
-  lemmatization:
-    enabled: true
+lemmatization:
+  enabled: true
+output:
+  path: "../data/output/training.preprocessed.csv"
