@@ -14,8 +14,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-Assurez-vous que votre workflow inclut une étape pour cloner le repository avec l'action actions/checkout. Exemple :
-
 jobs:
   build:
     runs-on: self-hosted
