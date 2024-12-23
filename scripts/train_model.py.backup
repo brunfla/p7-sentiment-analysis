@@ -1,0 +1,566 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Modèle simple : Régression Logistique
+
+# ## Rappel de la problématique
+
+# ## Sommaire
+# 
+# - **Étape 1 : Initialisation des paramètres**
+#   - Charger la configuration (Hydra)
+#   - Charger le dataset
+#   - Charger MLflow
+# 
+# - **Étape 2 : Prétraitement**
+#   - Suppression des tweets vides
+#   - Vectorisation TF-IDF
+# 
+# - **Étape 3 : Entraînement et Validation**
+#   - Découpage des données (`dataSplitting`)
+#   - **Optimisation des hyperparamètres** : deux options disponibles :
+#     - **Optuna** : Recherche bayésienne pour une exploration efficace.
+#     - **GridSearch** : Recherche exhaustive sur une grille prédéfinie.
+#   - Entraînement final
+#   - Validation sur un ensemble de validation
+# 
+# - **Étape 4 : Évaluation Finale et Comparaison**
+#   - Évaluation sur un ensemble de test indépendant
+#   - Enregistrement du run dans MLflow (métriques et artefacts)
+#   - Comparaison avec d'autres modèles enregistrés dans le **Model Registry**
+# 
+# - **Étape 5 : Promotion et Validation en Production**
+#   - Promotion du modèle validé en `Staging` dans MLflow
+#   - Tests supplémentaires pour validation finale :
+#     - Tests d'inférence sur des cas d'usage réels
+#     - Validation d'intégration dans l'environnement cible
+#   - Promotion vers le stage `Production` dans MLflow après validation
+#   - **Configuration de la surveillance en production** :
+#     - Utilisation d'Azure Application Insights pour le monitoring
+#     - Ajout de métriques clés spécifiques au projet d'analyse de sentiment :
+#       - **Dérive des données** : Détection des changements dans la distribution des entrées.
+#       - **Temps d'inférence** : Suivi des performances en temps réel.
+#       - **Précision par classe** : Surveillance des variations pour des catégories spécifiques.
+# 
+# #### Critères de Promotion vers `Staging` et `Production`
+# 
+# | **Étape**       | **Critère**                                                                                                  | **Seuil**                 | **Commentaires**                                                 |
+# |------------------|-------------------------------------------------------------------------------------------------------------|--------------------------------------|------------------------------------------------------------------|
+# | **Validation**   | Performances sur l'ensemble de validation.                                                                 | Accuracy ≥ 85%                       | Peut varier selon la nature du projet (par ex., `F1-score` > 0.8). |
+# | **Test Final**   | Performances sur l'ensemble Test indépendant.                                                              | F1-Score ≥ 80%                       | Doit garantir une bonne généralisation.                          |
+# | **Monitoring**   | Aucun drift détecté sur les données d'entrée dans Azure Insights.                                           | KS Test p-value ≥ 0.05               | Test de dérive des données.                                      |
+# | **Staging**      | Validation des cas d'usage réels dans l'environnement cible.                                                | ≥ 90% de succès sur les tests réels. | Exemples représentatifs des données réelles.                     |
+# | **Production**   | Aucune régression détectée dans les métriques critiques après une période de tests en `Staging`.            | Temps d'inférence < 300ms.           | Important pour l'intégration en temps réel.                      |
+
+# ## Stratégies globales adaptées au pipeline MLOps
+# 
+# | **Étape/Stratégie globale**                 | **trainTest**                                                                                     | **trainValTest**                                                                                     | **crossValidation**                                                                                           |
+# |---------------------------------------------|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+# | **Découpage des Données**                   | - 2 ensembles : **Train** et **Test**.                                                          | - 3 ensembles : **Train**, **Validation**, et **Test**.                                             | - Pas d’ensembles fixes : les données sont divisées en `k` folds pour validation croisée.                     |
+# | **Cas d'usage**                             | - Exploration rapide : tester une hypothèse ou une nouvelle feature.                            | - Comparaison et optimisation de modèles avec une validation explicite.                             | - Lorsque les données sont limitées ou fortement hétérogènes.                                                |
+# | **Optimisation des Hyperparamètres**         | - Pas possible sans `Validation`.                                                               | - Optimisation sur l'ensemble **Validation**.                                                       | - Validation croisée : optimisation intégrée via les splits.                                                 |
+# | **Entraînement Final**                       | - Sur l'ensemble **Train** avec des hyperparamètres par défaut ou optimisés (si manuel).         | - Sur l'ensemble **Train** avec les hyperparamètres optimaux.                                        | - Souvent sur toutes les données de `Train`, car validation croisée optimise sur tous les splits.             |
+# | **Validation (sur un ensemble dédié)**       | - Non applicable (ou via un plugin comme `crossValidation` sur `Train`).                        | - Sur l'ensemble **Validation**, métriques loguées.                                                 | - Validation incluse dans la validation croisée (k-folds).                                                   |
+# | **Évaluation Finale et Comparaison**         | - Sur l'ensemble **Test**, métriques loguées dans MLflow.                                        | - Sur l'ensemble **Test**, métriques loguées dans MLflow.                                           | - Peut nécessiter un ensemble **Test** séparé pour l’évaluation finale.                                       |
+# | **Cas d'usage spécifique**                   | - Prototypage rapide ou tests exploratoires.                                                    | - Standard pour des pipelines structurés, adaptés aux projets de production.                        | - Évaluation robuste sur plusieurs splits pour réduire les risques de biais.                                 |
+# | **Enregistrement dans MLflow**              | - Run enregistré pour l'évaluation finale uniquement.                                            | - Run enregistré après chaque étape (Validation, Test).                                             | - Run enregistré après validation croisée et évaluation finale (si Test séparé).                              |
+# | **Promotion et Validation en Production**    | - Promotion limitée (pas de validation explicite, risques plus élevés en production).            | - Modèle validé en `Staging`, testé et promu vers `Production`.                                      | - Promotion possible après validation croisée robuste et éventuelle validation finale sur un ensemble Test.   |
+
+# ## Etape 1 : Initialisation des paramètres
+
+# #### Charger la configuration (Hydra)
+
+# In[21]:
+
+
+import pandas as pd
+from omegaconf import DictConfig
+from hydra import initialize, compose
+from hydra.core.global_hydra import GlobalHydra
+
+# Réinitialiser Hydra si déjà initialisé
+if GlobalHydra.instance().is_initialized():
+    GlobalHydra.instance().clear()
+
+# Initialiser Hydra avec une nouvelle configuration
+initialize(config_path="config", version_base=None)
+cfg = compose(config_name="config")
+
+# Afficher la configuration globale
+print("Configuration globale :")
+print(cfg)
+
+# Charger les paramètres du modèle
+model_config = cfg.model
+print(f"\nModèle sélectionné : {model_config.name}")
+print(f"Paramètres du modèle : {model_config.parameters}")
+
+# Charger le dataset
+dataset_path = cfg.dataset.path  # Utiliser la clé correcte
+df = pd.read_csv(dataset_path)
+print(f"\nDataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
+
+
+# #### Charger MLflow
+
+# In[22]:
+
+
+import requests
+import subprocess
+import mlflow
+from omegaconf import DictConfig
+from hydra import initialize, compose
+from hydra.core.global_hydra import GlobalHydra
+
+
+def is_mlflow_running(host="127.0.0.1", port=5000):
+    """
+    Vérifie si le serveur MLflow est en cours d'exécution.
+    """
+    url = f"http://{host}:{port}"
+    try:
+        response = requests.get(url)
+        return response.status_code == 200  # Vérifie le code de réponse HTTP
+    except requests.ConnectionError:
+        return False
+
+
+# Vérifier si MLflow est en cours d'exécution
+mlflow_host = cfg.model.mlflow.trackingUri.split("://")[1].split(":")[0]
+mlflow_port = int(cfg.model.mlflow.trackingUri.split(":")[-1])
+
+if not is_mlflow_running(host=mlflow_host, port=mlflow_port):
+    subprocess.Popen(["mlflow", "server", "--host", mlflow_host, "--port", str(mlflow_port)])
+    print(f"MLflow server started on http://{mlflow_host}:{mlflow_port}.")
+else:
+    print(f"MLflow server is already running on http://{mlflow_host}:{mlflow_port}.")
+    # Vérifier si un run est déjà actif
+    if mlflow.active_run() is not None:
+        print(f"Ending the active run with ID: {mlflow.active_run().info.run_id}")
+        mlflow.end_run()
+
+# Configurer MLflow
+print("Démarrer un run.")
+mlflow.set_tracking_uri(cfg.model.mlflow.trackingUri)
+mlflow.set_experiment(cfg.model.mlflow.experiment.name)
+mlflow.start_run(run_name=cfg.model.mlflow.experiment.run.name)
+print("MLflow run started.")
+
+
+# ## Etape 2 : Prétraitement 
+
+# #### Suppression des lignes vides
+
+# In[23]:
+
+
+# Suppression des lignes vides
+df[df["tweet"].isna() | (df["tweet"] == "")]
+df = df[~(df['tweet'].isna() | (df['tweet'] == ""))]
+
+
+# #### Vectorization TF-IDF
+
+# In[24]:
+
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Vérifier le type de vectorizer configuré
+if cfg.vectorizer._target_ == "tfidfVectorizer":
+    vectorizer = TfidfVectorizer(
+        stop_words=cfg.vectorizer.stopWords,
+        max_features=cfg.vectorizer.maxFeatures,
+        ngram_range=tuple(cfg.vectorizer.ngramRange)
+    )
+else:
+    raise KeyError("La configuration 'tfidVectorizer' est absente ou mal définie dans 'vectorizer'.")
+    
+# Appliquer fit_transform sur les tweets
+X = vectorizer.fit_transform(df['tweet'])
+
+print(f"TF-IDF vectorisation terminée avec {X.shape[1]} caractéristiques.")
+
+
+# ## Etape 3 : Entraînement et Validation
+
+# #### Découpage des données (`dataSplitting`)
+
+# In[25]:
+
+
+from sklearn.model_selection import train_test_split, KFold
+
+# Encodage binaire de la cible
+y = df['id'].apply(lambda x: 1 if x == 4 else 0)
+
+# Vérifier la stratégie sélectionnée
+if cfg.strategy._target_ == "trainValTest":
+    # Charger les paramètres de la stratégie
+    params = cfg.strategy
+    # Découpage Train/Test
+    X_train_full, X_test, y_train_full, y_test = train_test_split(
+        X, y, test_size=params.testSize, random_state=params.randomSeed
+    )
+    # Découpage Train/Validation
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_full, y_train_full, test_size=params.validationSize, random_state=params.randomSeed
+    )
+    print(f"Données découpées avec la stratégie 'trainValTest':")
+    print(f"Train: {X_train.shape}, Validation: {X_val.shape}, Test: {X_test.shape}")
+
+elif cfg.strategy._target_ == "trainTest":
+    # Charger les paramètres de la stratégie
+    params = cfg.strategy
+    # Découpage Train/Test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=params.testSize, random_state=params.randomSeed
+    )
+    X_val, y_val = None, None  # Pas de validation pour cette stratégie
+    print(f"Données découpées avec la stratégie 'trainTest':")
+    print(f"Train: {X_train.shape}, Test: {X_test.shape}")
+
+elif cfg.strategy._target_ == "crossValidation":
+    # Charger les paramètres de la stratégie
+    params = cfg.strategy
+    kfold = KFold(n_splits=params.folds, shuffle=True, random_state=params.randomSeed)
+    folds = list(kfold.split(X, y))
+    print(f"Données découpées avec la stratégie 'crossValidation':")
+    print(f"Nombre de folds: {len(folds)}")
+    # Exemple d'accès au premier fold
+    train_idx, val_idx = folds[0]
+    X_train, X_val = X[train_idx], X[val_idx]
+    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+    X_test, y_test = None, None  # Pas de test explicite pour cette stratégie
+    print(f"Premier fold - Train: {X_train.shape}, Validation: {X_val.shape}")
+
+else:
+    raise ValueError(f"Stratégie de découpage des données '{cfg.strategy._target_}' non reconnue.")
+
+
+# #### Optimisation des Hyperparamètres
+
+# - Méthodes d'optimisation :
+#     - GridSearchCV :
+#         - Explore toutes les combinaisons d’hyperparamètres définis dans une grille.
+#         - Utilise la validation croisée pour évaluer chaque combinaison.
+#         - Retourne :
+#             - Les meilleurs hyperparamètres (best_params_).
+#             - Le modèle entraîné avec ces hyperparamètres (best_estimator_).
+# 
+#     - Optuna :
+#         - Optimisation bayésienne avec espace de recherche dynamique.
+#         - Fonction objectif :
+#             - Entraîne un modèle avec des hyperparamètres suggérés.
+#             - Évalue la performance via validation croisée (cross_val_score).
+#         - Retourne :
+#             - Les meilleurs hyperparamètres (best_params).
+#             - Un modèle final configuré avec ces paramètres.
+
+# In[26]:
+
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, cross_val_score
+import optuna
+
+# Paramètres pour l'optimisation
+if cfg.hyperparameterOptimization._target_ == "gridSearch":
+    param_grid = dict(cfg.hyperparameterOptimization.paramGrid)
+
+    # Définir les folds ou l'ensemble de validation
+    cv = (
+        cfg.validation.crossValidation.folds
+        if cfg.strategy._target_ == "crossValidation"
+        else [(list(range(X_train.shape[0])), list(range(X_val.shape[0])))]
+    )
+
+    # Création de GridSearchCV
+    grid_search = GridSearchCV(
+        estimator=LogisticRegression(),
+        param_grid=param_grid,
+        cv=cv,
+        verbose=cfg.hyperparameterOptimization.verbosityLevel,
+        n_jobs=cfg.hyperparameterOptimization.parallelJobs,
+    )
+    grid_search.fit(X_train, y_train)
+
+    # Récupération des meilleurs paramètres
+    best_params = grid_search.best_params_
+    model = grid_search.best_estimator_
+    print(f"Best Parameters Found by GridSearch: {best_params}")
+
+    # Évaluation finale sur l'ensemble de test
+    if X_test is not None and y_test is not None:
+        test_score = model.score(X_test, y_test)
+        print(f"Test Accuracy: {test_score}")
+
+elif cfg.hyperparameterOptimization._target_ == "optuna":
+    def objective(trial):
+        penalty = trial.suggest_categorical("penalty", ["l1", "l2"])
+        C = trial.suggest_float("C", 0.1, 10, log=True)
+        solver = trial.suggest_categorical("solver", ["liblinear", "saga"])
+        max_iter = trial.suggest_int("max_iter", 100, 1000)
+
+        model = LogisticRegression(penalty=penalty, C=C, solver=solver, max_iter=max_iter)
+
+        if cfg.strategy._target_ == "crossValidation":
+            scores = cross_val_score(model, X_train, y_train, cv=cfg.validation.crossValidation.folds)
+            return scores.mean()
+        elif cfg.strategy._target_ == "trainValTest":
+            model.fit(X_train, y_train)
+            return model.score(X_val, y_val)
+
+    # Lancer l'optimisation avec Optuna
+    study = optuna.create_study(direction=cfg.hyperparameterOptimization.optuna.optimizationDirection)
+    study.optimize(objective, n_trials=cfg.hyperparameterOptimization.optuna.trialCount, timeout=cfg.hyperparameterOptimization.optuna.timeLimitSeconds)
+
+    # Récupération des meilleurs paramètres
+    best_params = study.best_params
+    model = LogisticRegression(**best_params)
+    print(f"Best Parameters Found by Optuna: {best_params}")
+
+    # Évaluation finale sur l'ensemble de test
+    if X_test is not None and y_test is not None:
+        model.fit(X_train, y_train)
+        test_score = model.score(X_test, y_test)
+        print(f"Test Accuracy: {test_score}")
+
+else:
+    raise ValueError("Unsupported hyperparameter optimization method")
+
+
+# ## Étape 4 : Évaluation Finale et Comparaison
+
+# #### Évaluation sur un ensemble de test indépendant
+
+# In[27]:
+
+
+from sklearn.metrics import accuracy_score, classification_report
+
+# Étape 4 : Évaluation Finale et Comparaison
+if X_test is not None and y_test is not None:
+    print("\n### Étape 4 : Évaluation Finale ###")
+    
+    # Évaluer le modèle sur l'ensemble de test
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    
+    print(f"Accuracy on Test Set: {accuracy:.4f}")
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+else:
+    print("\n### Étape 4 : Évaluation Finale ###")
+    print("Aucun ensemble de test indépendant disponible pour évaluation.")
+
+
+# #### Enregistrement du run dans MLflow (métriques et artefacts)
+
+# In[28]:
+
+
+import mlflow
+import os
+from sklearn.metrics import roc_auc_score, roc_curve, classification_report
+import matplotlib.pyplot as plt
+
+# Enregistrement du run dans MLflow (métriques et artefacts)
+def log_run_metrics_and_artifacts(model, cfg, val_accuracy, val_f1, y_val=None, y_val_proba=None):
+    # Extraire les labels depuis la configuration Hydra
+    hydra_labels = {
+        "data_split": cfg.strategy._target_,
+        "optimizer": cfg.hyperparameterOptimization._target_,
+        "validation": cfg.validation.crossValidation.folds if cfg.strategy._target_ == "crossValidation" else "N/A",
+        "experiment_name": cfg.model.mlflow.experiment.name,
+        "run_name": cfg.model.mlflow.experiment.run.name,
+    }
+
+    # Log tags pour les labels Hydra
+    for key, value in hydra_labels.items():
+        mlflow.set_tag(key, value)
+
+    # Log des métriques dans MLflow
+    mlflow.log_metric("validation_accuracy", val_accuracy)
+    mlflow.log_metric("validation_f1_score", val_f1)
+
+    # Enregistrer le rapport de classification dans les logs
+    if y_val is not None:
+        val_classification_report = classification_report(y_val, model.predict(y_val))
+        with open("classification_report_val.txt", "w") as f:
+            f.write(val_classification_report)
+        mlflow.log_artifact("classification_report_val.txt")
+        os.remove("classification_report_val.txt")
+
+    # Courbe ROC (si disponible)
+    if y_val_proba is not None:
+        val_roc_auc = roc_auc_score(y_val, y_val_proba)
+        mlflow.log_metric("validation_roc_auc", val_roc_auc)
+
+        # Générer la courbe ROC
+        fpr, tpr, _ = roc_curve(y_val, y_val_proba)
+        plt.figure()
+        plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {val_roc_auc:.2f})")
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC Curve")
+        plt.legend(loc="lower right")
+        plt.grid()
+
+        # Enregistrer la courbe ROC
+        roc_curve_path = "roc_curve_validation.png"
+        plt.savefig(roc_curve_path)
+        plt.close()
+        mlflow.log_artifact(roc_curve_path)
+        os.remove(roc_curve_path)
+
+    # Enregistrement du modèle dans MLflow
+    mlflow.log_param("model_name", cfg.model.mlflow.model.name)
+    mlflow.sklearn.log_model(model, cfg.model.mlflow.model.name)
+
+    # Afficher les résultats
+    print(f"Validation Accuracy: {val_accuracy:.4f}")
+    print(f"Validation F1 Score: {val_f1:.4f}")
+    if y_val_proba is not None:
+        print(f"Validation ROC AUC: {val_roc_auc:.4f}")
+
+
+# In[29]:
+
+
+mlflow.end_run()
+
+
+# #### Comparaison avec d'autres modèles enregistrés dans le **Model Registry**
+
+# In[30]:
+
+
+import mlflow
+from mlflow.tracking import MlflowClient
+
+# Comparaison avec d'autres modèles enregistrés dans le Model Registry
+def compare_with_registered_models(cfg, val_accuracy):
+    client = MlflowClient(tracking_uri=cfg.model.mlflow.trackingUri)
+
+    # Récupérer tous les modèles enregistrés dans l'expérience
+    registered_models = client.search_registered_models()
+    
+    best_model = None
+    best_accuracy = 0
+
+    print("\nComparaison avec les modèles enregistrés dans le Model Registry:")
+    for model in registered_models:
+        model_name = model.name
+
+        # Récupérer les versions du modèle
+        for version in client.get_latest_versions(model_name):
+            if "validation_accuracy" in version.tags:
+                model_accuracy = float(version.tags["validation_accuracy"])
+
+                print(f"Modèle: {model_name}, Version: {version.version}, Validation Accuracy: {model_accuracy}")
+
+                # Comparer les scores
+                if model_accuracy > best_accuracy:
+                    best_accuracy = model_accuracy
+                    best_model = (model_name, version.version)
+
+    print("\nRésultats de la comparaison:")
+    if val_accuracy > best_accuracy:
+        print(f"Le modèle actuel est le meilleur avec une validation accuracy de {val_accuracy:.4f}.")
+    else:
+        print(f"Le meilleur modèle enregistré est '{best_model[0]}' (version {best_model[1]}) avec une validation accuracy de {best_accuracy:.4f}.")
+
+# Appel de la fonction pour comparer le modèle actuel
+compare_with_registered_models(cfg, val_accuracy)
+
+
+# ## Étape 5 : Promotion et Validation en Production
+
+# import onnxruntime as ort
+# from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+# from opentelemetry import trace
+# from opentelemetry.sdk.trace import TracerProvider
+# from opentelemetry.sdk.trace.export import BatchSpanProcessor
+# 
+# # Configuration Azure Application Insights
+# exporter = AzureMonitorTraceExporter(connection_string="InstrumentationKey=85b10953-35ac-45bc-9192-6044192484fe")
+# tracer_provider = TracerProvider()
+# span_processor = BatchSpanProcessor(exporter)
+# tracer_provider.add_span_processor(span_processor)
+# trace.set_tracer_provider(tracer_provider)
+# tracer = trace.get_tracer(__name__)
+# 
+# # Charger le modèle ONNX
+# onnx_session = ort.InferenceSession('./output/simple_model.onnx')
+# 
+# def predict_sentiment(tweet):
+#     """Prédire le sentiment d'un tweet avec le modèle ONNX."""
+#     inputs = {onnx_session.get_inputs()[0].name: [[tweet]]}  # Respect du format attendu
+#     outputs = onnx_session.run(None, inputs)
+#     predicted_label = outputs[0][0]  # 1 pour "positif", 0 pour "négatif"
+#     return "Positif" if predicted_label == 1 else "Négatif"
+# 
+# def main():
+#     print("=== Test de Sentiment ===")
+#     while True:
+#         # Saisir un tweet
+#         tweet = input("Entrez un tweet (ou tapez 'exit' pour quitter) : ")
+#         if tweet.lower() == 'exit':
+#             print("Au revoir !")
+#             break
+#         
+#         # Prédire le sentiment
+#         sentiment = predict_sentiment(tweet)
+#         print(f"Prédiction : {sentiment}")
+#         
+#         # Demander validation utilisateur
+#         validation = input("La prédiction est-elle correcte ? (oui/non) : ").strip().lower()
+#         
+#         if validation == "non":
+#             print("Merci pour votre retour, une trace a été envoyée.")
+#             
+#             # Envoyer une trace à Application Insights
+#             with tracer.start_as_current_span("Validation incorrecte"):
+#                 span = trace.get_current_span()
+#                 span.set_attribute("tweet", tweet)
+#                 span.set_attribute("prédiction", sentiment)
+#                 span.set_attribute("validation", "Non")
+#         elif validation == "oui":
+#             print("Merci pour votre validation.")
+#         else:
+#             print("Réponse invalide. Veuillez entrer 'oui' ou 'non'.")
+# 
+# if __name__ == "__main__":
+#     main()
+
+# #### Enregistrement dans le Model Registry 
+
+# from mlflow.tracking import MlflowClient
+# 
+# client = MlflowClient()
+# model_uri = f"runs:/{run.info.run_id}/{cfg.mlflow.model.name}"
+# 
+# try:
+#     # Vérifier si le modèle existe dans le registre
+#     client.get_registered_model(cfg.mlflow.model.name)
+# except mlflow.exceptions.MlflowException:
+#     # Créer un modèle dans le registre s'il n'existe pas
+#     client.create_registered_model(cfg.mlflow.model.name)
+# 
+# # Créer une nouvelle version du modèle dans le registre
+# client.create_model_version(
+#     name=cfg.mlflow.model.name,
+#     source=model_uri,
+#     run_id=run.info.run_id
+# )
+
+# ####
+# 
+# # Transitionner une version de modèle vers Production
+# client.transition_model_version_stage(
+#     name=cfg.mlflow.model.name,
+#     version=1,  # La version à transitionner
+#     stage="Production"
+# )
