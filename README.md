@@ -18,9 +18,10 @@ dvc remote modify myremote endpointurl  http://api.minio.local
 ```
 
 ```
-dvc add data/input
-dvc add data/output
-dvc add models
+touch data/output/clean_data.csv
+(mlops-env) ➜  p7-sentiment-analysis git:(main) ✗ dvc add data/output/clean_data.csv
+100% Adding...|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████|1/1 [00:02,  2.89s/file]
+
 ```
 
 ###

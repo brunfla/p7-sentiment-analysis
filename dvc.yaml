@@ -1,0 +1,8 @@
+stages:
+  clean_data:
+    cmd: python scripts/clean_data.py
+    deps:
+      - data/input/training.1600000.processed.noemoticon.utf-8.csv
+      - scripts/clean_data.py
+    outs:
+      - data/output/clean_data.csv
