@@ -1,0 +1,12 @@
+_target_: "kubernetes"
+trackingUri: "http://mlflow.local"
+username: "admin"
+password: "zLPGwPxNiQ"
+experiment:
+  name: "p7-sentiment-analysis"
+#    run:
+#      name: "logistic_regression_run"
+#      description: "Training with logistic regression"
+#      tags:
+#        modelType: "logistic_regression"
+#        datasetVersion: "v1.0"

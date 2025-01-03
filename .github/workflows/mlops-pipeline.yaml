@@ -26,10 +26,14 @@ jobs:
         run: |
           source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
           python -u scripts/clean_data.py
-      - name: Vectorisation
+      - name: Normalisation des données
         run: |
           source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python -u scripts/vectorizer.py
+          python -u scripts/normalize_data.py
+      - name: Vectorisation des données
+        run: |
+          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+          python -u scripts/vectorize_data.py
 
   model-training:
     runs-on: self-hosted

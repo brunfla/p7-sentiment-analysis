@@ -1,8 +1,9 @@
 # Ignore les données et artefacts
-data/
 notebooks/mlartifacts/
 notebooks/mlruns/
-models/
+scripts/mlruns/
+scripts/mlarifacts/
+scripts/*id*.json
 *.onnx
 *.csv
 
@@ -17,3 +18,13 @@ __pycache__/
 tests/
 docs/
 
+# DVC
+# Ignorer toutes les données dans 'data/'
+data/*
+
+# Mais ne pas ignorer les fichiers .dvc générés
+!data/*.dvc
+
+
+models/*
+!models/*.dvc

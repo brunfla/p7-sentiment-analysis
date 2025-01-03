@@ -1,0 +1,5 @@
+_target_: "trainTest"
+testSize: 0.2
+randomSeed: 42
+outputSplit: "../data/output/train_test_split.pkl"
+existingSplitData: false

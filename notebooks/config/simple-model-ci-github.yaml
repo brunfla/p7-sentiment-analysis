@@ -1,8 +1,0 @@
-defaults:
-  - dataset: dataset-v1-github        # Choix du dataset par défaut
-  - preprocess: preProcessConfig      # Choix du pre processing
-  - strategy: trainValTest            # Stratégie par défaut
-  - model: p7-sentiment-analysis/logisticRegression   # Modèle par défaut
-  - vectorizer: tfidfVectorizer       # Vectorizer par défaut
-  - hyperparameterOptimization: gridSearch
-  - validation: crossValidation       # Validation par défaut

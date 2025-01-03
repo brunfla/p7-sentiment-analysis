@@ -1,0 +1,6 @@
+_target_: "trainValTest"
+testSize: 0.2
+validationSize: 0.25
+randomSeed: 42
+outputSplit: "../data/output/train_val_test_split.pkl"
+existingSplitData: false

@@ -1,0 +1,10 @@
+_version_: "v1"
+enabled: true
+remove_urls: true
+remove_mentions: true
+remove_hashtags: true
+lowercase: true
+remove_punctuation: true
+strip_whitespace: true
+output: "../data/output/clean_data.csv"
+existingData: true

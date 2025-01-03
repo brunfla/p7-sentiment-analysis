@@ -1,0 +1,24 @@
+_target_: "evaluateModel"
+
+# Seuil pour la classification binaire
+threshold: 0.5
+
+# Métriques à calculer
+metrics:
+  - "accuracy"
+  - "precision"
+  - "recall"
+  - "f1"
+  - "roc_auc"
+  - "pr_auc"
+
+# Méthode de moyenne (pour le multi-class)
+averageMethod: "binary"
+
+# Contrôle de l'affichage ou non des courbes
+plots:
+  confusionMatrix: true
+  rocCurve: true
+  prCurve: true
+
+description: "Configuration de l'évaluation finale"

@@ -1,0 +1,8 @@
+[core]
+    remote = myremote
+    autostage = true
+['remote "myremote"']
+    url = s3://p7-sentiment-analysis
+    access_key_id = admin
+    secret_access_key = XKzq2CuGKQ
+    endpointurl = http://api.minio.local:80

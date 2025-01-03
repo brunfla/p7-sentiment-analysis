@@ -1,0 +1,6 @@
+_target_: "local"
+trackingUri: "http://127.0.0.1:5000"
+storePath: "/mnt/c/Users/bruno/Documents/GitHub/p7-sentiment-analysis/notebooks/mlruns"  # Chemin pour stocker les artefacts
+experiment:
+  name: "p7-sentiment-analysis"
+  runName: "run-local"
