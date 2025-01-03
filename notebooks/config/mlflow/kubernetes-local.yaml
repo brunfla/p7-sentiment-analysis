@@ -1,7 +1,7 @@
 _target_: "kubernetes"
 trackingUri: "http://mlflow.local"
-username: "admin"
-password: "zLPGwPxNiQ"
+#username: "admin"
+#password: "zLPGwPxNiQ"
 experiment:
   name: "p7-sentiment-analysis"
 #    run:
