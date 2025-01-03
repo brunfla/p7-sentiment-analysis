@@ -20,10 +20,12 @@ docs/
 
 # DVC
 # Ignorer toutes les données dans 'data/'
-data/*
+data/input/*
+data/output/*
 
 # Mais ne pas ignorer les fichiers .dvc générés
-!data/*.dvc
+!data/input/*.dvc
+!data/output/*.dvc
 
 
 models/*
