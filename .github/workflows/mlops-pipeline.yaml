@@ -15,9 +15,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: test
+        run: curl docker-registry-service.docker-registry:5000/v2/_catalog
+
       # Étape 1 : Démarrer le container Docker avec l'image personnalisée
       - name: Use custom Docker image
-        uses: docker://192.168.65.3:32000/mlops-env:v1
+        uses: docker://docker-registry-service.docker-registry/mlops-env:v1
 
       # Étape 2 : Vérifier le code du dépôt
       - name: Checkout code
