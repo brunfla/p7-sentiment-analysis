@@ -15,16 +15,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: test
-        run: curl docker-registry-service.docker-registry:5000/v2/_catalog
-
-      # Étape 1 : Démarrer le container Docker avec l'image personnalisée
-      - name: Use custom Docker image
-        uses: docker://docker-registry-service.docker-registry/mlops-env:v1
-
-      # Étape 2 : Vérifier le code du dépôt
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Source env
+        run: source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
 
       # Étape 5 : Tirer les données et artefacts (si nécessaires)
       - name: Pull data from DVC
