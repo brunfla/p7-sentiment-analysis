@@ -7,30 +7,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  dvc_pipeline:
+  custom-docker-env:
     runs-on: self-hosted
-
+    container:
+      image: 10.1.0.162:5000/mlops-env:v1
     steps:
-      # Étape 1 : Vérifier le code du dépôt
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: use docker
-        uses: docker://10.1.0.162:5000/mlops-env:v1
-
-      # Étape 5 : Tirer les données et artefacts (si nécessaires)
-      - name: Pull data from DVC
+      - name: Pull DVC data
         run: dvc pull
 
-      # Étape 6 : Reproduire le pipeline DVC
-      - name: Run DVC pipeline
+      - name: Reproduce DVC pipeline
         run: dvc repro
 
-      # Étape 7 : Pousser les résultats (artefacts et données mises à jour)
-      - name: Push updated data and models to DVC remote
+      - name: Push DVC data
         run: dvc push
 
-      # Étape 8 : Vérifier les métriques (optionnel)
       - name: Check metrics
-        run: |
-          dvc metrics show
+        run: dvc metrics show
