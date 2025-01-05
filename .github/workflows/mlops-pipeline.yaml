@@ -15,8 +15,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: test
-        run: curl http://10.1.0.162:5000/v2/_catalog
+      - name: use docker
+        uses: docker://10.1.0.162:5000/mlops-env:v1
 
       # Étape 5 : Tirer les données et artefacts (si nécessaires)
       - name: Pull data from DVC
