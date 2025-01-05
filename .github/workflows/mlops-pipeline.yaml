@@ -15,8 +15,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Source env
-        run: source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
+      - name: test
+        run: curl http://docker-registry-service:5000/v2/_catalog
 
       # Étape 5 : Tirer les données et artefacts (si nécessaires)
       - name: Pull data from DVC
