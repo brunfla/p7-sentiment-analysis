@@ -8,7 +8,7 @@ on:
 
 jobs:
   dvc_pipeline:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       # Étape 1 : Vérifier le code du dépôt
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: test
-        run: curl http://docker-registry-service:5000/v2/_catalog
+        run: curl http://docker-registry-service.docker-registry.svc.cluster.local:5000/v2/_catalog
 
       # Étape 5 : Tirer les données et artefacts (si nécessaires)
       - name: Pull data from DVC
