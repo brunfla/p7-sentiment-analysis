@@ -32,3 +32,5 @@ data/output/*
 
 models/*
 !models/*.dvc
+
+ops/actions-runner/
