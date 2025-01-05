@@ -1,0 +1,3 @@
+_target_: "lemmatization"
+model: "en_core_web_sm"  # Modèle SpaCy à utiliser pour la lemmatisation
+output: "./data/output/normalize_data.csv"     # Où sauvegarder le vectoriseur

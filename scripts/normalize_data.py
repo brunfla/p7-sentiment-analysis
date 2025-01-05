@@ -30,14 +30,13 @@ def log_system_metrics():
 # Afficher les métriques système
 log_system_metrics()
 
-# Récupérer le chemin de configuration et la stratégie depuis les variables d'environnement
-config_path = os.getenv('HYDRA_CONFIG_PATH', '../notebooks/config')
-strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
-
 # Réinitialiser Hydra si déjà initialisé
 if GlobalHydra.instance().is_initialized():
     GlobalHydra.instance().clear()
 
+# Récupérer le chemin de configuration et la stratégie depuis les variables d'environnement
+config_path = os.getenv('HYDRA_CONFIG_PATH', './config')
+strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
 # Initialiser Hydra avec la stratégie choisie
 initialize(config_path=config_path, version_base=None)
 cfg = compose(config_name=strategy)
@@ -50,7 +49,6 @@ logger.info("Configuration normalizer:")
 logger.info(cfg.normalizer)
 
 #### --- MAIN --- ####
-
 # Fonction pour lemmatiser un seul texte
 def lemmatize_text(text):
     doc = nlp(text)
@@ -100,15 +98,6 @@ def handle_lemmatization():
 def handle_default():
     logger.warning(f"Target '{cfg.normalizer._target_}' non pris en charge. Fin du script.")
     exit()
-
-# Gérer le cas où existingData est true
-output_path = cfg.normalizer.output
-if cfg.normalizer.existingData:
-    if os.path.exists(output_path):
-        logger.info(f"Le fichier normalisé existe déjà ({output_path}). Traitement bypassé.")
-        exit()
-    else:
-        logger.warning(f"Le paramètre existingData est activé, mais le fichier {output_path} est introuvable. Le traitement sera effectué.")
 
 # Dictionnaire des targets
 targets = {

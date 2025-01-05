@@ -1,3 +1,4 @@
+_self_: "defalts"
 defaults:
   - dataset: dataset-v1
   - cleaner: cleaner-v1
@@ -6,9 +7,8 @@ defaults:
   - mlflow: kubernetes-local
   - partitioner: trainTest
   - model: logisticRegression
-  - hyperparameterOptimization: gridSearch
-  - validation: none
-  - evaluator: none
+  - train: gridSearch
+  - test: finalTest
 strategy:
   description: "Validation rapide avec Train/Test"
   use_case: "Prototypage ou tests exploratoires"

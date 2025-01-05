@@ -1,5 +1,0 @@
-_target_: "crossValidation"
-folds: 5
-randomSeed: 42
-outputSplit: "../data/output/cv_folds.pkl"
-existingSplitData: false

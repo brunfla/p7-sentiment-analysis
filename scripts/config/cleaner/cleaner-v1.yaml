@@ -1,10 +1,9 @@
 _version_: "v1"
-enabled: true
+_target_: "cleaner"
 remove_urls: true
 remove_mentions: true
 remove_hashtags: true
 lowercase: true
 remove_punctuation: true
 strip_whitespace: true
-output: "../data/output/clean_data.csv"
-existingData: true
+output: "./data/output/clean_data.csv"

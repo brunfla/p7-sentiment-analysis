@@ -1,73 +1,51 @@
+name: DVC Pipeline
+
 on:
   push:
     branches:
-      - main  # Exécute le workflow pour les pushs sur la branche `main
+      - main
+  workflow_dispatch:
 
 jobs:
-  setup-environment:
-    runs-on: self-hosted
+  dvc_pipeline:
+    runs-on: ubuntu-latest
+
     steps:
-      - name: Activer l'environnement Conda
-        run: source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-      - name: Vérifier l'environnement activé
-        run: conda info --envs
-      - name: Checkout repository
+      # Étape 1 : Vérifier le code du dépôt
+      - name: Checkout code
         uses: actions/checkout@v3
-      - name: Check repository
-        run: ls */*
-      - name: Check Data
-        run: ls ../data/*
 
-  data-preprocessing:
-    runs-on: self-hosted
-    needs: setup-environment
-    steps:
-      - name: Nettoyage des données
-        run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python -u scripts/clean_data.py
-      - name: Normalisation des données
-        run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python -u scripts/normalize_data.py
-      - name: Vectorisation des données
-        run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python -u scripts/vectorize_data.py
+      # Étape 1 : Démarrer le container Docker avec l'image personnalisée
+      - name: Use custom Docker image
+        uses: docker://votre-utilisateur/mlops-env:latest
 
-  model-training:
-    runs-on: self-hosted
-    needs: [setup-environment, data-preprocessing]
-    steps:
-      - name: Automatisation des entraînements
-        run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python scripts/train_model.py
+      # Étape 2 : Vérifier le code du dépôt
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  model-validation:
-    runs-on: self-hosted
-    needs: model-training
-    steps:
-      - name: Validation et tests rigoureux
+      # Étape 4 : Configurer les remotes DVC (optionnel)
+      - name: Configure DVC remote
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python scripts/validate_model.py
+          dvc remote modify myremote url s3://mon-projet-dvc-bucket/path
+          dvc remote modify myremote region us-west-2
+          dvc remote default myremote
 
-  model-deployment:
-    runs-on: self-hosted
-    needs: model-validation
-    steps:
-      - name: Déploiement continu
+      # Étape 5 : Tirer les données et artefacts (si nécessaires)
+      - name: Pull data from DVC
+        run: dvc pull
+
+      # Étape 6 : Reproduire le pipeline DVC
+      - name: Run DVC pipeline
+        run: dvc repro
+
+      # Étape 7 : Pousser les résultats (artefacts et données mises à jour)
+      - name: Push updated data and models to DVC remote
+        run: dvc push
+
+      # Étape 8 : Vérifier les métriques (optionnel)
+      - name: Check metrics
         run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python scripts/deploy_model.py
-
-  model-iteration:
-    runs-on: self-hosted
-    needs: model-deployment
-    steps:
-      - name: Amélioration continue
-        run: |
-          source /opt/conda/etc/profile.d/conda.sh && conda activate mlops-env
-          python scripts/iterate_model.py
-
+          dvc metrics show

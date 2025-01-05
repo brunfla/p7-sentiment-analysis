@@ -1,5 +1,4 @@
 _target_: optuna
-enabled: false
 trialCount: 20
 timeLimitSeconds: 600
 optimizationDirection: "maximize"

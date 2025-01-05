@@ -7,6 +7,7 @@ import json
 import argparse
 import logging
 import pickle
+import mlflow
 
 import psutil
 import mlflow
@@ -36,20 +37,34 @@ def log_system_metrics():
         f"Available: {memory.available / (1024**3):.2f} GB)"
     )
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--run-id-file",
-        default="mlflow_runid.json",
-        help="Chemin du fichier JSON contenant le run_id MLflow généré par train_model.py."
-    )
-    args = parser.parse_args()
+# ------------------------------------------------
+# MLFLOW
+# ------------------------------------------------
+def handle_mlflow(cfg):
+    """
+    Configure MLflow en fonction du contexte (local ou Kubernetes)
+    """
+    if cfg.mlflow._target_ == "kubernetes":
+        logger.info("MLflow configuré pour Kubernetes. Aucun démarrage local requis.")
+        mlflow.set_tracking_uri(cfg.mlflow.trackingUri)
 
+        # Ajout des informations de connexion
+        if hasattr(cfg.mlflow, "username") and hasattr(cfg.mlflow, "password"):
+            os.environ["MLFLOW_TRACKING_USERNAME"] = cfg.mlflow.username
+            os.environ["MLFLOW_TRACKING_PASSWORD"] = cfg.mlflow.password
+            logger.info("Ajout des informations d'authentification pour Kubernetes.")
+    elif cfg.mlflow._target_ == "local":
+        logger.info("Gestion de MLflow local.")
+        mlflow.set_tracking_uri(cfg.mlflow.trackingUri)
+    else:
+        raise ValueError(f"Configuration MLflow inconnue: {cfg.mlflow._target_}")
+
+def main():
     # 1) Afficher les ressources système au démarrage
     log_system_metrics()
 
     # 2) Charger la config Hydra
-    config_path = os.getenv("HYDRA_CONFIG_PATH", "../notebooks/config")
+    config_path = os.getenv("HYDRA_CONFIG_PATH", "./config")
     strategy = os.getenv("HYDRA_STRATEGY", "validation-quick")
 
     # Réinitialiser Hydra si déjà initialisé
@@ -61,31 +76,21 @@ def main():
 
     logger.info(f"Stratégie sélectionnée : {strategy}")
 
-    # 3) Vérifier si on est en mode "validation-quick" => pas d'évaluation finale
-    if strategy == "validation-quick":
-        logger.warning("Mode 'validation-quick' détecté => pas d'évaluation finale.")
-        sys.exit(0)
-
-    # 4) Vérifier si un bloc evaluator existe et s'il est "none"
-    if hasattr(cfg, "evaluator"):
-        eval_cfg = cfg.evaluator
-        if getattr(eval_cfg, "_target_", None) == "none":
-            logger.warning("Bloc evaluator défini sur 'none' => pas d'évaluation.")
-            sys.exit(0)
-    else:
-        logger.warning("Aucun bloc 'evaluator' dans la config => pas d'évaluation.")
-        sys.exit(0)
+    # 3) Initialiser MLflow
+    handle_mlflow(cfg)
+    mlflow.set_experiment(cfg.mlflow.experiment.name)
 
     # 5) Charger le run_id depuis le fichier JSON
-    if not os.path.exists(args.run_id_file):
-        logger.error(f"Fichier {args.run_id_file} introuvable => impossible de charger mlflow_run_id.")
+    run_id_file = "data/output/mlflow_id.json"
+    if not os.path.exists(run_id_file):
+        logger.error(f"Fichier {run_id_file} introuvable => impossible de charger mlflow_run_id.")
         sys.exit(1)
 
-    with open(args.run_id_file, "r") as f:
+    with open(run_id_file, "r") as f:
         run_data = json.load(f)
-    mlflow_run_id = run_data.get("mlflow_run_id", None)
+    mlflow_run_id = run_data.get("id", None)
     if not mlflow_run_id:
-        logger.error("Aucune clé 'mlflow_run_id' dans ce JSON => évaluation impossible.")
+        logger.error("Aucune clé 'id' dans ce JSON => évaluation impossible.")
         sys.exit(1)
 
     logger.info(f"MLflow run_id détecté : {mlflow_run_id}")
@@ -125,6 +130,7 @@ def main():
     logger.info(f"Test set : X_test.shape={X_test.shape}, y_test.shape={len(y_test)}")
 
     # 8) Récupérer la config d'évaluation (seuil, métriques...)
+    eval_cfg = cfg.test
     threshold = getattr(eval_cfg, "threshold", 0.5)
     metrics_to_compute = getattr(eval_cfg, "metrics", ["accuracy", "precision", "recall", "f1"])
     average_method = getattr(eval_cfg, "averageMethod", "binary")
@@ -175,7 +181,7 @@ def main():
     logger.info("\n" + cls_report)
 
     # 11) Logger tout dans MLflow (nouveau run "final_evaluation")
-    with mlflow.start_run(run_name="final_evaluation"):
+    with mlflow.start_run(run_id=mlflow_run_id):
         # Logger les métriques
         for k, v in computed_metrics.items():
             logger.info(f"{k}: {v:.4f}")

@@ -37,7 +37,7 @@ def log_system_metrics():
     )
 
 # ------------------------------------------------
-# Gestion des targets pour MLflow
+# MLFLOW
 # ------------------------------------------------
 def handle_mlflow(cfg):
     """
@@ -65,21 +65,11 @@ def handle_mlflow(cfg):
 # SCRIPT PRINCIPAL
 # ------------------------------------------------
 def main():
-    # --- Parsing d'arguments ---
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--run-id-file",
-        type=str,
-        default="mlflow_runid.json",
-        help="Chemin du fichier JSON où sauvegarder le run_id MLflow."
-    )
-    args = parser.parse_args()
-
     # 1) Afficher les métriques système au démarrage
     log_system_metrics()
 
     # 2) Récupérer la config Hydra
-    config_path = os.getenv('HYDRA_CONFIG_PATH', '../notebooks/config')
+    config_path = os.getenv('HYDRA_CONFIG_PATH', './config')
     strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
 
     # Réinitialiser Hydra si déjà initialisé
@@ -130,10 +120,11 @@ def main():
     logger.info("Modèle enregistré dans MLflow.")
 
     # 7) Sauvegarder le run_id dans un fichier
+    run_id_file = "data/output/mlflow_id.json"
     mlflow_run_id = mlflow.active_run().info.run_id
-    with open(args.run_id_file, "w") as f:
-        json.dump({"mlflow_run_id": mlflow_run_id}, f)
-    logger.info(f"MLflow run_id sauvegardé dans {args.run_id_file}")
+    with open(run_id_file, "w") as f:
+        json.dump({"id": mlflow_run_id}, f)
+    logger.info(f"MLflow run_id sauvegardé dans {run_id_file}")
 
 if __name__ == "__main__":
     main()

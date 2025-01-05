@@ -1,5 +1,4 @@
 _target_: "gridSearch"
-enabled: true
 crossValidationFolds: 5
 verbosityLevel: 1
 parallelJobs: -1
