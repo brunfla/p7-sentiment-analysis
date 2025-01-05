@@ -51,7 +51,23 @@ Avec le **CI/CD**, la logique est automatisée :
 
 L’intégration de **DVC** et du **CI/CD** assure des workflows ML reproductibles, industrialisés et adaptables à grande échelle.
 
+### Docker dans les Pipelines CI/CD
+**Docker** garantit des environnements reproductibles, simplifiant :
+- Gestion des dépendances.
+- Tests reproductibles.
+- Déploiements sur cloud ou Kubernetes.
+
+### Exemple avec Conda et Docker
+```bash
+conda pack -n mlops-env -o mlops-env.tar.gz
+docker build -t mlops-env:v1 -f Dockerfile.mlops .
+docker tag
+docekr push
+
+```
 ---
+### Kubernetes
+
 
 ## Conclusion
 
