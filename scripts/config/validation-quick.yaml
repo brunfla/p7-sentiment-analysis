@@ -11,4 +11,4 @@ defaults:
   - test: finalTest
 strategy:
   description: "Validation rapide avec Train/Test"
-  use_case: "Prototypage ou tests exploratoires"
+  use_case: "Prototypage"
