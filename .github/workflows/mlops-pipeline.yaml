@@ -20,7 +20,7 @@ jobs:
 
       # Étape 1 : Démarrer le container Docker avec l'image personnalisée
       - name: Use custom Docker image
-        uses: docker://localhost:5000/mlops-env:v1
+        uses: docker://127.0.0.1:5000/mlops-env:v1
 
       # Étape 2 : Vérifier le code du dépôt
       - name: Checkout code
