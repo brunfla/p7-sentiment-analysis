@@ -17,21 +17,11 @@ jobs:
 
       # Étape 1 : Démarrer le container Docker avec l'image personnalisée
       - name: Use custom Docker image
-        uses: docker://votre-utilisateur/mlops-env:latest
+        uses: docker://mlops-env:v1
 
       # Étape 2 : Vérifier le code du dépôt
       - name: Checkout code
         uses: actions/checkout@v3
-
-      # Étape 4 : Configurer les remotes DVC (optionnel)
-      - name: Configure DVC remote
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          dvc remote modify myremote url s3://mon-projet-dvc-bucket/path
-          dvc remote modify myremote region us-west-2
-          dvc remote default myremote
 
       # Étape 5 : Tirer les données et artefacts (si nécessaires)
       - name: Pull data from DVC
