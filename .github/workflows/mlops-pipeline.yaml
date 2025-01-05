@@ -12,7 +12,7 @@ jobs:
     container:
       image: 10.1.0.162:5000/mlops-env:v1
     steps:
-      - name: Checkout code.
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Pull DVC data
