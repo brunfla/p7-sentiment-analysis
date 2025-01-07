@@ -60,13 +60,13 @@ stages:
       md5: fb9958691cf6e65a800dfa562ec51490
       size: 200250590
     - path: data/output/normalize_data_config.yaml
-      md5: c73459407ffd08baca8527567ecd5ec2
-      size: 87
+      md5: dc4022fe9878fdcad79e9f47c79d41d0
+      size: 119
     - path: scripts/normalize_data.py
       md5: 7792169b402b1cbaa9fcd779fe95706a
       size: 3844
     outs:
-    - path: data/output/normalize_data.csv
+    - path: data/output/normalize_data.pkl
       md5: 86650ed5258bd012f258cb40ae0fb60b
       size: 197323317
       isexec: true
@@ -77,18 +77,18 @@ stages:
       md5: 86650ed5258bd012f258cb40ae0fb60b
       size: 197323317
     - path: data/output/vectorize_data_config.yaml
-      md5: 764d19d0f7c939d7b16b195f6eb59497
-      size: 186
+      md5: 45585f804bb1dccdf35797e6a993a920
+      size: 184
     - path: scripts/vectorize_data.py
       md5: 418114aa76fbf825e08cb05a3ad5a41b
       size: 3641
     outs:
-    - path: data/output/vectorize_data.pkl
+    - path: data/output/train_ready_data.pkl
       md5: e8497dc62cb085bd4e206bf0cd86970d
       size: 120028330
       isexec: true
     - path: data/output/vectorizer.pkl
-      md5: 6ed2ce29067c95cd14ef26337cca487d
+      md5: 555c3cd54693870fdfbe2987fb12cd78
       size: 35964
       isexec: true
   split_data:

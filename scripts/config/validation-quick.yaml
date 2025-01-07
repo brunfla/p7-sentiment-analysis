@@ -2,12 +2,12 @@ _self_: "defalts"
 defaults:
   - dataset: dataset-v1
   - cleaner: cleaner-v1
+  - partitioner: trainTest
   - normalizer: lemmatization
   - vectorizer: tfidfVectorizer
   - mlflow: kubernetes-local
-  - partitioner: trainTest
-  - model: bidirectionalLSTM #logisticRegression
-  - train: gridSearch
+  - model: train/bidirectionalLSTM/model #logisticRegression
+  - tuning: train/bidirectionalLSTM/tuning/optuna
   - test: finalTest
 strategy:
   description: "Validation rapide avec Train/Test"
