@@ -5,9 +5,9 @@ stages:
       - scripts/config
     outs:
       - data/output/clean_data_config.yaml
+      - data/output/split_data_config.yaml
       - data/output/normalize_data_config.yaml
       - data/output/vectorize_data_config.yaml
-      - data/output/split_data_config.yaml
       - data/output/model_config.yaml
       - data/output/train_config.yaml
       - data/output/test_config.yaml
@@ -21,6 +21,15 @@ stages:
     outs:
       - data/output/clean_data.csv
 
+  split_data:
+    cmd: python scripts/split_data.py
+    deps:
+      - data/output/split_data_config.yaml
+      - data/output/clean_data.csv
+      - scripts/split_data.py
+    outs:
+      - data/output/split_data.pkl
+
   normalize_data:
     cmd: python scripts/normalize_data.py
     deps:
@@ -28,7 +37,7 @@ stages:
       - data/output/clean_data.csv
       - scripts/normalize_data.py
     outs:
-      - data/output/normalize_data.csv
+      - data/output/normalize_data.pkl
 
   vectorize_data:
     cmd: python scripts/vectorize_data.py
@@ -37,24 +46,15 @@ stages:
       - data/output/normalize_data.csv
       - scripts/vectorize_data.py
     outs:
-      - data/output/vectorize_data.pkl
+      - data/output/train_ready_data.pkl
       - data/output/vectorizer.pkl
-
-  split_data:
-    cmd: python scripts/split_data.py
-    deps:
-      - data/output//split_data_config.yaml
-      - data/output/vectorize_data.pkl
-      - scripts/split_data.py
-    outs:
-      - data/output/split_data.pkl
 
   train_model:
     cmd: python scripts/train_model.py
     deps:
       - data/output/model_config.yaml
       - data/output/train_config.yaml
-      - data/output/split_data.pkl
+      - data/output/train_ready_data.pkl
       - scripts/train_model.py
     outs:
       - data/output/mlflow_id.json
@@ -64,15 +64,5 @@ stages:
     deps:
       - data/output/mlflow_id.json
       - data/output/test_config.yaml
-      - data/output/split_data.pkl
+      - data/output/train_ready_data.pkl
       - scripts/test_model.py
-
-dvc remote add -d myremote s3://p7-sentiment-analysis
-
-dvc remote modify myremote access_key_id admin
-dvc remote modify myremote secret_access_key XKzq2CuGKQ
-dvc remote modify myremote endpointurl  http://api.minio.local        
-
-remote:
-  myremote:
-    url: s3://p7-sentiment-analysis

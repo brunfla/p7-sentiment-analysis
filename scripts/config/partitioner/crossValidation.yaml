@@ -1,4 +1,5 @@
 _target_: "crossValidation"
 folds: 5
 randomSeed: 42
-outputSplit: "./data/output/split_data.pkl"
+input: "./data/output/clean_data.csv"
+output: "./data/output/split_data.pkl"

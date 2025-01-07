@@ -2,7 +2,7 @@
     remote = myremote
     autostage = true
 ['remote "myremote"']
-    url = s3://p7-sentiment-analysis
+    url = s3://dvc
     access_key_id = admin
-    secret_access_key = XKzq2CuGKQ
-    endpointurl = http://api.minio.local:80
+    secret_access_key = QvZ2rmkxjb 
+    endpointurl = http://127.0.0.1:31811

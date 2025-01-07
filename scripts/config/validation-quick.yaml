@@ -6,7 +6,7 @@ defaults:
   - vectorizer: tfidfVectorizer
   - mlflow: kubernetes-local
   - partitioner: trainTest
-  - model: logisticRegression
+  - model: bidirectionalLSTM #logisticRegression
   - train: gridSearch
   - test: finalTest
 strategy:

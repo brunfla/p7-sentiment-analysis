@@ -1,5 +1,41 @@
 schema: '2.0'
 stages:
+  generate_config:
+    cmd: python scripts/generate_config.py
+    deps:
+    - path: scripts/config
+      md5: 12d4bac5ab024256e8c0d8ac8fe287f8.dir
+      size: 4879
+      nfiles: 19
+    outs:
+    - path: data/output/clean_data_config.yaml
+      md5: b1ea60f5b1c2ba070a320fb24196382a
+      size: 263
+      isexec: true
+    - path: data/output/model_config.yaml
+      md5: d757c1dbfbd5845d9f0721bb530a554b
+      size: 286
+      isexec: true
+    - path: data/output/normalize_data_config.yaml
+      md5: dc4022fe9878fdcad79e9f47c79d41d0
+      size: 119
+      isexec: true
+    - path: data/output/split_data_config.yaml
+      md5: c04ecb5dfc6c25f5593dc4e7454818c2
+      size: 122
+      isexec: true
+    - path: data/output/test_config.yaml
+      md5: daf18fb36a7c5f06c39d2022af935329
+      size: 245
+      isexec: true
+    - path: data/output/train_config.yaml
+      md5: 4bdc0177f471d7afa5ada2f495e5ac37
+      size: 205
+      isexec: true
+    - path: data/output/vectorize_data_config.yaml
+      md5: 45585f804bb1dccdf35797e6a993a920
+      size: 184
+      isexec: true
   clean_data:
     cmd: python scripts/clean_data.py
     deps:
@@ -7,11 +43,11 @@ stages:
       md5: 2404eb1a5fde3c5e9411b81f899c4980
       size: 238942690
     - path: data/output/clean_data_config.yaml
-      md5: 293e51b5c6c635cbd27baa4097451f31
-      size: 195
+      md5: b1ea60f5b1c2ba070a320fb24196382a
+      size: 263
     - path: scripts/clean_data.py
-      md5: ff57ff97a860b263d0e0646306627bed
-      size: 3500
+      md5: 2e77215c9d097dd6b6ce2811c1ba3acc
+      size: 3501
     outs:
     - path: data/output/clean_data.csv
       md5: fb9958691cf6e65a800dfa562ec51490
@@ -34,42 +70,6 @@ stages:
       md5: 86650ed5258bd012f258cb40ae0fb60b
       size: 197323317
       isexec: true
-  generate_config:
-    cmd: python scripts/generate_config.py
-    deps:
-    - path: scripts/config
-      md5: 3472bd8cd5e7d35748025750713232f0.dir
-      size: 4250
-      nfiles: 18
-    outs:
-    - path: data/output/clean_data_config.yaml
-      md5: 293e51b5c6c635cbd27baa4097451f31
-      size: 195
-      isexec: true
-    - path: data/output/model_config.yaml
-      md5: 475f9ff76190ad1f0593e0fb44b51331
-      size: 157
-      isexec: true
-    - path: data/output/normalize_data_config.yaml
-      md5: c73459407ffd08baca8527567ecd5ec2
-      size: 87
-      isexec: true
-    - path: data/output/split_data_config.yaml
-      md5: c4eb68fdabb21b4922cec013342586ce
-      size: 91
-      isexec: true
-    - path: data/output/test_config.yaml
-      md5: daf18fb36a7c5f06c39d2022af935329
-      size: 245
-      isexec: true
-    - path: data/output/train_config.yaml
-      md5: 4bdc0177f471d7afa5ada2f495e5ac37
-      size: 205
-      isexec: true
-    - path: data/output/vectorize_data_config.yaml
-      md5: 764d19d0f7c939d7b16b195f6eb59497
-      size: 186
-      isexec: true
   vectorize_data:
     cmd: python scripts/vectorize_data.py
     deps:
@@ -88,7 +88,7 @@ stages:
       size: 120028330
       isexec: true
     - path: data/output/vectorizer.pkl
-      md5: 5728a338fba85dc0ac7b1be27e8689cf
+      md5: 6ed2ce29067c95cd14ef26337cca487d
       size: 35964
       isexec: true
   split_data:
@@ -121,18 +121,18 @@ stages:
       md5: 4bdc0177f471d7afa5ada2f495e5ac37
       size: 205
     - path: scripts/train_model.py
-      md5: da0354182dfba96a72d6859d132e0e87
-      size: 4714
+      md5: 3323f4fb9688012fa1d56a1b20012f82
+      size: 5968
     outs:
     - path: data/output/mlflow_id.json
-      md5: ded1f16df645f552f774d38e880abaea
+      md5: 83ada255a7adcaa4962f5401db98de55
       size: 42
       isexec: true
   test_model:
     cmd: python scripts/test_model.py
     deps:
     - path: data/output/mlflow_id.json
-      md5: ded1f16df645f552f774d38e880abaea
+      md5: 83ada255a7adcaa4962f5401db98de55
       size: 42
     - path: data/output/split_data.pkl
       md5: 7ea595c28e60ce14bfe933aac52a5dce

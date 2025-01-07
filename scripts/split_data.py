@@ -2,21 +2,11 @@
 # coding: utf-8
 
 import os
-import sys
-import json
-import argparse
-import logging
-import psutil
-import requests
-import subprocess
 import pickle
-import optuna
-import mlflow
-import dvc.api 
-
-from sklearn.model_selection import train_test_split, KFold, GridSearchCV, cross_val_score
-
-from omegaconf import DictConfig
+import logging
+import argparse
+import psutil
+from sklearn.model_selection import train_test_split, KFold
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
 
@@ -44,19 +34,50 @@ def log_system_metrics():
     )
 
 # ------------------------------------------------
+# Fonctions utilitaires pour le partitionnement
+# ------------------------------------------------
+def save_partition(output_path, data):
+    with open(output_path, "wb") as f:
+        pickle.dump(data, f)
+    logger.info(f"[Partitioner] Données sauvegardées dans {output_path}")
+
+def train_val_test_split(X, y, cfg):
+    X_train_full, X_test, y_train_full, y_test = train_test_split(
+        X, y,
+        test_size=cfg.testSize,
+        random_state=cfg.randomSeed
+    )
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train_full, y_train_full,
+        test_size=cfg.validationSize,
+        random_state=cfg.randomSeed
+    )
+    logger.info(f"Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
+    return X_train, y_train, X_val, y_val, X_test, y_test
+
+def train_test_split_only(X, y, cfg):
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=cfg.testSize,
+        random_state=cfg.randomSeed
+    )
+    logger.info(f"Train: {X_train.shape[0]}, Test: {X_test.shape[0]}")
+    return X_train, y_train, X_test, y_test
+
+def cross_validation_split(X, y, cfg):
+    kfold = KFold(
+        n_splits=cfg.folds,
+        shuffle=True,
+        random_state=cfg.randomSeed
+    )
+    folds = list(kfold.split(X, y))
+    logger.info(f"Nombre de folds: {len(folds)}")
+    return folds
+
+# ------------------------------------------------
 # SCRIPT PRINCIPAL
 # ------------------------------------------------
 def main():
-    # --- Parsing d'arguments ---
-
-    # Configurer le logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-    )
-    logger = logging.getLogger(__name__)
-
     # 1) Afficher les métriques système au démarrage
     log_system_metrics()
 
@@ -74,11 +95,12 @@ def main():
 
     logger.info(f"Stratégie sélectionnée : {strategy}")
 
-    vectorized_data_path = cfg.vectorizer.outputData
-    
-    # Si le fichier existe, on peut procéder à son chargement
-    logger.info(f"Chargement des données vectorisées depuis {vectorized_data_path}...")
-    with open(vectorized_data_path, 'rb') as f:
+    input_path = cfg.partitioner.input
+    output_path = cfg.partitioner.output
+
+    # Chargement des données vectorisées
+    logger.info(f"Chargement des données vectorisées depuis {input_path}...")
+    with open(input_path, 'rb') as f:
         X, y = pickle.load(f)
     logger.info(
         f"Données vectorisées chargées avec succès. "
@@ -87,66 +109,23 @@ def main():
     )
 
     # ------------------------------------------------
-    # 2) PARTITIONNER 
+    # Partitionnement basé sur la configuration
     # ------------------------------------------------
     partition_cfg = cfg.partitioner
-    split_path = getattr(partition_cfg, "outputSplit", None)
-
-    X_train, y_train = None, None
-    X_val, y_val = None, None
-    X_test, y_test = None, None
-    folds = None
-
-    logger.info(f"[Partitioner] Génération du partionnement {partition_cfg._target_}")
     if partition_cfg._target_ == "trainValTest":
-        X_train_full, X_test, y_train_full, y_test = train_test_split(
-            X, y,
-            test_size=partition_cfg.testSize,
-            random_state=partition_cfg.randomSeed
-        )
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_train_full, y_train_full,
-            test_size=partition_cfg.validationSize,
-            random_state=partition_cfg.randomSeed
-        )
-        logger.info(f"Train: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
-
-        # Sauvegarder le split
-        if split_path:
-            with open(split_path, "wb") as f:
-                pickle.dump((X_train, y_train, X_val, y_val, X_test, y_test), f)
-            logger.info(f"[Partitioner] Nouveau split trainValTest sauvegardé dans {split_path}")
+        X_train, y_train, X_val, y_val, X_test, y_test = train_val_test_split(X, y, partition_cfg)
+        save_partition(output_path, (X_train, y_train, X_val, y_val, X_test, y_test))
 
     elif partition_cfg._target_ == "trainTest":
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y,
-            test_size=partition_cfg.testSize,
-            random_state=partition_cfg.randomSeed
-        )
-        logger.info(f"Train: {X_train.shape[0]}, Test: {X_test.shape[0]}")
-
-        if split_path:
-            with open(split_path, "wb") as f:
-                pickle.dump((X_train, y_train, X_test, y_test), f)
-            logger.info(f"[Partitioner] Nouveau split trainTest sauvegardé dans {split_path}")
+        X_train, y_train, X_test, y_test = train_test_split_only(X, y, partition_cfg)
+        save_partition(output_path, (X_train, y_train, X_test, y_test))
 
     elif partition_cfg._target_ == "crossValidation":
-        kfold = KFold(
-            n_splits=partition_cfg.folds,
-            shuffle=True,
-            random_state=partition_cfg.randomSeed
-        )
-        folds = list(kfold.split(X, y))
-        logger.info(f"Nombre de folds: {len(folds)}")
-
-        if split_path:
-            with open(split_path, "wb") as f:
-                pickle.dump((folds, X, y), f)
-            logger.info(f"[Partitioner] Nouveau split crossValidation sauvegardé dans {split_path}")
+        folds = cross_validation_split(X, y, partition_cfg)
+        save_partition(output_path, (folds, X, y))
 
     else:
         raise ValueError(f"Partition de découpage non reconnue: {partition_cfg._target_}")
-
 
 if __name__ == "__main__":
     main()

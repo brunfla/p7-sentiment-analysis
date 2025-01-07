@@ -24,7 +24,6 @@ Pour faciliter la comparaison des expérimentations, nous avons utilisé **MLflo
 - **Gestion centralisée** des versions de modèles.
 
 Dans ce projet, notre modèle de régression logistique a été enregistré dans le **Model Registry** de MLflow comme baseline.
-
 ---
 
 ## CI/CD et DVC : Structurer et Automatiser vos Pipelines MLOps
@@ -40,6 +39,7 @@ Les pipelines de Machine Learning sont bien plus complexes et coûteux que ceux 
 Par exemple, dans un projet d’analyse de sentiments, une modification des données entraîne uniquement la réexécution de l’entraînement et de la validation, économisant temps et ressources.
 
 ### CI/CD : Automatiser l’intégration et le déploiement
+
 Avec le **CI/CD**, la logique est automatisée :
 - **Continuous Integration (CI)** :
   - Validation des données.
@@ -50,23 +50,6 @@ Avec le **CI/CD**, la logique est automatisée :
   - Surveillance continue des performances en production pour détecter les dégradations.
 
 L’intégration de **DVC** et du **CI/CD** assure des workflows ML reproductibles, industrialisés et adaptables à grande échelle.
-
-### Docker dans les Pipelines CI/CD
-**Docker** garantit des environnements reproductibles, simplifiant :
-- Gestion des dépendances.
-- Tests reproductibles.
-- Déploiements sur cloud ou Kubernetes.
-
-### Exemple avec Conda et Docker
-```bash
-conda pack -n mlops-env -o mlops-env.tar.gz
-docker build -t mlops-env:v1 -f Dockerfile.mlops .
-docker tag
-docekr push
-
-```
----
-### Kubernetes
 
 
 ## Conclusion

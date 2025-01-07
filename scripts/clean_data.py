@@ -63,7 +63,7 @@ def main():
     logger.info(cfg.cleaner)
 
     # 5) Définir les chemins
-    data_path = cfg.dataset.path
+    data_path = cfg.cleaner.input
     output_path = cfg.cleaner.output
 
     # 6) Charger le dataset

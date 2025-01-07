@@ -6,4 +6,5 @@ remove_hashtags: true
 lowercase: true
 remove_punctuation: true
 strip_whitespace: true
+input: "./data/input/training.1600000.processed.noemoticon.utf-8.csv"
 output: "./data/output/clean_data.csv"

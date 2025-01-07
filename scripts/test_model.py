@@ -102,13 +102,9 @@ def main():
 
     # 7) Charger le split de partition pour récupérer (X_test, y_test)
     partition_cfg = cfg.partitioner
-    split_path = getattr(partition_cfg, "outputSplit", None)
-    if not split_path or not os.path.exists(split_path):
-        logger.error(f"Impossible de charger le fichier de split partition : {split_path}")
-        sys.exit(1)
 
-    logger.info(f"Chargement du split depuis {split_path}")
-    with open(split_path, "rb") as f:
+    logger.info(f"Chargement du split depuis data/output/train_ready_data.pkl")
+    with open("data/output/train_ready_data.pkl", "rb") as f:
         data = pickle.load(f)
 
     # Selon le type de partition, on récupère le test set

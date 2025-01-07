@@ -10,7 +10,7 @@ jobs:
   custom-docker-env:
     runs-on: self-hosted
     container:
-      image: 10.1.0.162:5000/mlops-env:v1
+      image: 10.108.67.191:5000/mlops-env:v1
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
