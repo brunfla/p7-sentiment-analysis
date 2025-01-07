@@ -1,0 +1,17 @@
+_self_: "defaults"
+defaults:
+  - mlflow: kubernetes-local
+  - dataset: dataset-v1
+  - dataPreprocess/cleaner@cleaner: cleaner
+  - dataPreprocess/partitioner@partitioner: trainTest
+  - dataPreprocess/normalizer@normalizer: lemmatization
+  - dataPreprocess/vectorizer@vectorizer: tfidfVectorizer
+  - train/logisticRegression@model: model
+  - train/logisticRegression@training: training
+  - train/logisticRegression@tuning: tuning
+  - train/logisticRegression/tuning/type@tuningType: gridSearch 
+  - test: test
+
+strategy:
+  description: "Validation rapide avec Train/Test"
+  use_case: "Baseline"

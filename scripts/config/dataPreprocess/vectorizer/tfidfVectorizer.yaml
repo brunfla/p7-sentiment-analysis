@@ -4,5 +4,6 @@ stopWords: "english"
 maxFeatures: 1000
 ngramRange: [1, 2]
 # Chemins pour la sauvegarde ou le chargement
+input: "data/output/normalize_data.pkl"
 outputPath: "data/output/vectorizer.pkl"      # Où sauvegarder le vectoriseur
 outputData: "data/output/train_ready_data.pkl" # Où sauvegarder les données transformées

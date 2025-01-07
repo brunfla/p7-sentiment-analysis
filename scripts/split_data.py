@@ -6,6 +6,7 @@ import pickle
 import logging
 import argparse
 import psutil
+import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
@@ -83,7 +84,7 @@ def main():
 
     # 2) Récupérer la config Hydra
     config_path = os.getenv('HYDRA_CONFIG_PATH', './config')
-    strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
+    strategy = os.getenv('HYDRA_STRATEGY', 'baseline')
 
     # Réinitialiser Hydra si déjà initialisé
     if GlobalHydra.instance().is_initialized():
@@ -98,15 +99,30 @@ def main():
     input_path = cfg.partitioner.input
     output_path = cfg.partitioner.output
 
-    # Chargement des données vectorisées
-    logger.info(f"Chargement des données vectorisées depuis {input_path}...")
-    with open(input_path, 'rb') as f:
-        X, y = pickle.load(f)
-    logger.info(
-        f"Données vectorisées chargées avec succès. "
-        f"Taille X: {X.shape if hasattr(X, 'shape') else len(X)}, "
-        f"Taille y: {len(y)}"
-    )
+    # Chargement des données depuis un fichier CSV
+    def load_data(input_path, text_column, label_column):
+        logger.info(f"Chargement des données depuis {input_path}...")
+        data = pd.read_csv(input_path)
+
+        if text_column not in data.columns or label_column not in data.columns:
+            raise ValueError(
+                f"Les colonnes spécifiées ne sont pas présentes dans le fichier. "
+                f"Colonnes trouvées : {list(data.columns)}"
+            )
+
+        X = data[text_column]
+        y = data[label_column]
+
+        logger.info(f"Données chargées avec succès. Taille X: {len(X)}, Taille y: {len(y)}")
+        return X, y
+
+    # SCRIPT PRINCIPAL (partie mise à jour)
+    input_path = cfg.partitioner.input
+    text_column = cfg.dataset.text_column
+    label_column = cfg.dataset.label_column
+
+    # Utiliser la fonction pour charger les données
+    X, y = load_data(input_path, text_column, label_column)
 
     # ------------------------------------------------
     # Partitionnement basé sur la configuration

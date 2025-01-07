@@ -1,4 +1,0 @@
-enabled: true
-factor: 0.5
-patience: 2
-min_lr: 1e-5

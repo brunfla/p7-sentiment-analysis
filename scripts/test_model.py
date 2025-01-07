@@ -65,7 +65,7 @@ def main():
 
     # 2) Charger la config Hydra
     config_path = os.getenv("HYDRA_CONFIG_PATH", "./config")
-    strategy = os.getenv("HYDRA_STRATEGY", "validation-quick")
+    strategy = os.getenv("HYDRA_STRATEGY", "baseline")
 
     # Réinitialiser Hydra si déjà initialisé
     if GlobalHydra.instance().is_initialized():

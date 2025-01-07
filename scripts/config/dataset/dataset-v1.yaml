@@ -1,1 +1,3 @@
 path: "./data/input/training.1600000.processed.noemoticon.utf-8.csv"
+text_column: "tweet"  # Exemple de colonne pour le texte
+label_column: "id"  # Exemple de colonne pour les étiquettes

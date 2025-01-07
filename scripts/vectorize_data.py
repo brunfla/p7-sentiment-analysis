@@ -10,6 +10,7 @@ from omegaconf import DictConfig
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
 from sklearn.feature_extraction.text import TfidfVectorizer
+from load_split_data import load_partitioned_data
 import pickle
 
 # Configurer le logging
@@ -41,7 +42,7 @@ if GlobalHydra.instance().is_initialized():
 
 # Récupérer le chemin de configuration et la stratégie depuis les variables d'environnement
 config_path = os.getenv('HYDRA_CONFIG_PATH', './config')
-strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
+strategy = os.getenv('HYDRA_STRATEGY', 'baseline')
 # Initialiser Hydra avec la stratégie choisie
 initialize(config_path=config_path, version_base=None)
 cfg = compose(config_name=strategy)
@@ -53,19 +54,27 @@ print(f"Stratégie sélectionnée : {strategy}")
 logger.info("Configuration vectorizer:")
 logger.info(cfg.vectorizer)
 
+
 def handle_tfidf_vectorizer():
     """Gère la vectorisation TF-IDF du dataset en fonction de la config Hydra."""
     logger.info("Target 'tfidfVectorizer' détecté. Traitement en cours...")
 
-    # 1) Déterminer le chemin du dataset (CSV nettoyé)
-    dataset_path = cfg.normalizer.output
-    logger.info(f"Chargement du dataset depuis {dataset_path}...")
-    
-    df = pd.read_csv(dataset_path)
-    df = df[~(df['tweet'].isna() | (df['tweet'].str.strip() == ""))]
-    logger.info(f"Dataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
+    dataset_path = cfg.vectorizer.input
+    logger.info(f"Chargement des données depuis {dataset_path}...")
 
-    # 2) Créer ou charger le vectorizer
+    data = load_partitioned_data(dataset_path, cfg.partitioner)
+
+    # Gestion des différents types de partitionnement
+    if cfg.partitioner._target_ == "trainValTest":
+        X_train, y_train, _, _, _, _ = data
+    elif cfg.partitioner._target_ == "trainTest":
+        X_train, y_train, _, _, _, _ = data
+    elif cfg.partitioner._target_ == "crossValidation":
+        _, X_train, y_train = data
+    else:
+        raise ValueError(f"Partition de découpage non reconnue: {cfg.partitioner._target_}")
+
+    # Créer ou charger le vectorizer
     logger.info("Création d'un nouveau vectoriseur TF-IDF...")
     vectorizer = TfidfVectorizer(
         stop_words=cfg.vectorizer.stopWords,
@@ -73,17 +82,15 @@ def handle_tfidf_vectorizer():
         ngram_range=tuple(cfg.vectorizer.ngramRange),
     )
 
-    # 3) 
-    logger.info("Appliquer TF-IDF sur les tweets...")
-    X = vectorizer.fit_transform(df['tweet'])
-    # *** Calcul de y si vous voulez le transmettre au pipeline d'entraînement
-    y = df['id'].apply(lambda x: 1 if x == 4 else 0)
+    logger.info("Appliquer TF-IDF sur les données d'entraînement...")
+    X_train_vectorized = vectorizer.fit_transform(X_train)
 
     # Sauvegarder (X, y) vectorisés
     with open(cfg.vectorizer.outputData, "wb") as f:
-        pickle.dump((X, y), f)
+        pickle.dump((X_train_vectorized, y_train), f)
     logger.info(f"Données vectorisées sauvegardées dans {cfg.vectorizer.outputData}.")
 
+    # Sauvegarder le modèle du vectoriseur
     with open(cfg.vectorizer.outputPath, "wb") as f:
         pickle.dump(vectorizer, f)
     logger.info(f"Vectoriseur sauvegardé dans {cfg.vectorizer.outputPath}.")

@@ -34,7 +34,7 @@ stages:
     cmd: python scripts/normalize_data.py
     deps:
       - data/output/normalize_data_config.yaml
-      - data/output/clean_data.csv
+      - data/output/split_data.pkl
       - scripts/normalize_data.py
     outs:
       - data/output/normalize_data.pkl
@@ -43,7 +43,7 @@ stages:
     cmd: python scripts/vectorize_data.py
     deps:
       - data/output/vectorize_data_config.yaml
-      - data/output/normalize_data.csv
+      - data/output/normalize_data.pkl
       - scripts/vectorize_data.py
     outs:
       - data/output/train_ready_data.pkl
@@ -54,6 +54,7 @@ stages:
     deps:
       - data/output/model_config.yaml
       - data/output/train_config.yaml
+      - data/output/tuning_config.yaml
       - data/output/train_ready_data.pkl
       - scripts/train_model.py
     outs:

@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import pandas as pd
+import pickle
 from omegaconf import DictConfig
 from hydra import initialize, compose
 from hydra.core.global_hydra import GlobalHydra
@@ -36,13 +37,13 @@ if GlobalHydra.instance().is_initialized():
 
 # Récupérer le chemin de configuration et la stratégie depuis les variables d'environnement
 config_path = os.getenv('HYDRA_CONFIG_PATH', './config')
-strategy = os.getenv('HYDRA_STRATEGY', 'validation-quick')
+strategy = os.getenv('HYDRA_STRATEGY', 'baseline')
 # Initialiser Hydra avec la stratégie choisie
 initialize(config_path=config_path, version_base=None)
 cfg = compose(config_name=strategy)
 
 # Afficher la stratégie utilisée
-print(f"Stratégie sélectionnée : {strategy}")
+logger.info(f"Stratégie sélectionnée : {strategy}")
 
 # Afficher la configuration globale
 logger.info("Configuration normalizer:")
@@ -77,22 +78,50 @@ def handle_lemmatization():
     # Initialiser Spacy pour la lemmatisation
     nlp = spacy.load(cfg.normalizer.model)
 
-    # Charger le dataset
-    dataset_path = cfg.cleaner.output  # Utiliser la clé correcte
-    logger.info(f"Chargement du dataset depuis {dataset_path}...")
-    df = pd.read_csv(dataset_path)
-    logger.info(f"Dataset chargé avec {len(df)} lignes et {len(df.columns)} colonnes.")
-    logger.info(f"Dataset columns: {df.columns.tolist()}")
+    # Charger le dataset depuis le fichier pkl
+    partition_cfg = cfg.partitioner
+    dataset_path = partition_cfg.output  # Chemin du fichier pickle
+    logger.info(f"Chargement des données depuis {dataset_path}...")
+    
+    with open(dataset_path, "rb") as f:
+        if partition_cfg._target_ == "trainValTest":
+            X_train, y_train, X_val, y_val, X_test, y_test = pickle.load(f)
+        elif partition_cfg._target_ == "trainTest":
+            X_train, y_train, X_test, y_test = pickle.load(f)
+            X_val, y_val = None, None
+        elif partition_cfg._target_ == "crossValidation":
+            folds, X, y = pickle.load(f)
+        else:
+            raise ValueError(f"Partition de découpage non reconnue: {partition_cfg._target_}")
 
-    # Appliquer la lemmatisation
-    logger.info("Lemmatisation activée. Appliquer la lemmatisation...")
-    df['tweet'] = lemmatize_with_pipe(df, batch_size=1000, nlp=nlp)
-    logger.info("Lemmatisation terminée.")
+    logger.info("Données chargées avec succès.")
 
-    # Sauvegarder le dataset nettoyé
+    # Appliquer la lemmatisation sur chaque partition
+    def apply_lemmatization(X, nlp):
+        if X is not None:
+            df = pd.DataFrame({"tweet": X})
+            df['tweet'] = lemmatize_with_pipe(df, batch_size=1000, nlp=nlp)
+            return df['tweet'].tolist()
+        return None
+
+    X_train = apply_lemmatization(X_train, nlp)
+    X_val = apply_lemmatization(X_val, nlp)
+    X_test = apply_lemmatization(X_test, nlp)
+
+    # Sauvegarder le dataset lemmatisé dans un fichier pkl
     output_path = cfg.normalizer.output
-    logger.info(f"Sauvegarde du dataset dans {output_path}...")
-    df.to_csv(output_path, index=False)
+    logger.info(f"Sauvegarde des données lemmatisées dans {output_path}...")
+
+    if partition_cfg._target_ == "trainValTest":
+        with open(output_path, "wb") as f:
+            pickle.dump((X_train, y_train, X_val, y_val, X_test, y_test), f)
+    elif partition_cfg._target_ == "trainTest":
+        with open(output_path, "wb") as f:
+            pickle.dump((X_train, y_train, X_test, y_test), f)
+    elif partition_cfg._target_ == "crossValidation":
+        with open(output_path, "wb") as f:
+            pickle.dump((folds, X, y), f)
+
     logger.info(f"Dataset sauvegardé dans {output_path}.")
 
 def handle_default():
