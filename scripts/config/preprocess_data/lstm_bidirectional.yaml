@@ -1,0 +1,16 @@
+partitioner:
+  output: "./data/output/partitions"        # Répertoire contenant les partitions générées par split_data.py
+  strategy: "trainValTest"                 # Stratégie utilisée lors du partitionnement initial
+
+cleaner:
+  output: "./data/output/processed"        # Répertoire où sauvegarder les partitions prétraitées
+  glove_path: "./data/input/glove.twitter.27B.200d.txt"  # Chemin vers le modèle GloVe
+  glove_threshold: 0.6                     # Seuil pour la similarité cosinus lors du nettoyage GloVe
+
+dataset:
+  text_column: "tweet"                     # Nom de la colonne contenant les tweets
+  label_column: "label"                    # Nom de la colonne contenant les labels
+
+resources:
+  cpu_check_interval: 1                    # Intervalle pour surveiller l'utilisation du CPU (en secondes)
+  random_state: 42    

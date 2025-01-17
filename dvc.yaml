@@ -1,69 +1,122 @@
 stages:
-  generate_config:
-    cmd: python scripts/generate_config.py
+  preprocess_base_cleaning:
+    cmd: python scripts/preprocess_base_cleaning.py
     deps:
-      - scripts/config
-    outs:
-      - data/output/clean_data_config.yaml
-      - data/output/split_data_config.yaml
-      - data/output/normalize_data_config.yaml
-      - data/output/vectorize_data_config.yaml
-      - data/output/model_config.yaml
-      - data/output/train_config.yaml
-      - data/output/test_config.yaml
-
-  clean_data:
-    cmd: python scripts/clean_data.py
-    deps:
-      - data/output/clean_data_config.yaml
       - data/input/training.1600000.processed.noemoticon.utf-8.csv
-      - scripts/clean_data.py
+      - scripts/preprocess_base_cleaning.py
     outs:
-      - data/output/clean_data.csv
+      - data/output/preprocessed/cleaned/training.csv
 
-  split_data:
-    cmd: python scripts/split_data.py
+  preprocess_glove_cleaning:
+    cmd: python scripts/preprocess_glove_cleaning.py
     deps:
-      - data/output/split_data_config.yaml
-      - data/output/clean_data.csv
-      - scripts/split_data.py
+      - data/output/preprocessed/cleaned/training.csv
+      - data/input/glove.twitter.27B.100d.txt
+      - scripts/preprocess_glove_cleaning.py
     outs:
-      - data/output/split_data.pkl
+      - data/output/preprocessed/glove_cleaned/training.csv
+    params:
+      - preprocess_glove_cleaning.glove_similarity_threshold
 
-  normalize_data:
-    cmd: python scripts/normalize_data.py
+  generate_glove_embedding_matrix:
+    cmd: python scripts/generate_glove_embedding_matrix.py
     deps:
-      - data/output/normalize_data_config.yaml
-      - data/output/split_data.pkl
-      - scripts/normalize_data.py
+      - data/output/preprocessed/glove_cleaned/training.csv
+      - data/input/glove.twitter.27B.100d.txt
+      - scripts/generate_glove_embedding_matrix.py
     outs:
-      - data/output/normalize_data.pkl
+      - data/output/vectors/glove_vectors.pkl
+    params:
+      - generate_glove_embedding_matrix.vocab_size
+      - generate_glove_embedding_matrix.embedding_dim
 
-  vectorize_data:
-    cmd: python scripts/vectorize_data.py
+  split_data_train_test:
+    cmd: python scripts/split_data_train_test.py
     deps:
-      - data/output/vectorize_data_config.yaml
-      - data/output/normalize_data.pkl
-      - scripts/vectorize_data.py
+      - data/output/preprocessed/glove_cleaned/training.csv
+      - scripts/split_data_train_test.py
     outs:
-      - data/output/train_ready_data.pkl
-      - data/output/vectorizer.pkl
+      - data/output/partitions/traintest/glove_cleaned/
+    params:
+      - split_data_train_test.text_column
+      - split_data_train_test.label_column
+      - split_data_train_test.test_size
+      - split_data_train_test.random_state
 
-  train_model:
-    cmd: python scripts/train_model.py
+  generate_vectorizer_tfidf:
+    cmd: python scripts/generate_vectorizer_tfidf.py
     deps:
-      - data/output/model_config.yaml
-      - data/output/train_config.yaml
-      - data/output/tuning_config.yaml
-      - data/output/train_ready_data.pkl
-      - scripts/train_model.py
+      - data/output/partitions/traintest/glove_cleaned/train.csv
+      - scripts/generate_vectorizer_tfidf.py
     outs:
-      - data/output/mlflow_id.json
+      - data/output/vectorizers/tfidf_train.pkl
+    params:
+      - generate_vectorizer_tfidf.max_features
+      - generate_vectorizer_tfidf.text_column
 
-  test_model:
-    cmd: python scripts/test_model.py
+  transform_tfidf_train_test:
+    cmd: python scripts/transform_tfidf_train_test.py
     deps:
-      - data/output/mlflow_id.json
-      - data/output/test_config.yaml
-      - data/output/train_ready_data.pkl
-      - scripts/test_model.py
+      - data/output/partitions/traintest/glove_cleaned/
+      - data/output/vectorizers/tfidf_train.pkl
+      - scripts/transform_tfidf_train_test.py
+    outs:
+      - data/output/partitions/traintest/tfidf_vectors/
+      - data/output/partitions/traintest/labels/
+    params:
+      - transform_tfidf_train_test.text_column
+      - transform_tfidf_train_test.label_column
+
+  train_logistic_tfidf:
+    cmd: python scripts/train_logistic_tfidf.py
+    deps:
+      - data/output/partitions/traintest/tfidf_vectors/train.npz
+      - data/output/partitions/traintest/labels/train_labels.csv
+      - scripts/train_logistic_tfidf.py
+    outs:
+      - data/output/experiments/logistic_tfidf/model  # Répertoire distinct pour le modèle
+
+  test_logistic_tfidf:
+    cmd: python scripts/test_logistic_tfidf.py
+    deps:
+      - data/output/partitions/traintest/tfidf_vectors/test.npz
+      - data/output/partitions/traintest/labels/test_labels.csv
+      - data/output/experiments/logistic_tfidf/model  # Utilise le modèle généré par l'étape précédente
+      - scripts/test_logistic_tfidf.py
+    outs:
+      - data/output/experiments/logistic_tfidf/metrics/  # Répertoire distinct pour les métriques
+
+
+  # Étape 3 : Génération de la matrice d'embedding GloVe et du tokenizer
+  #generate_glove_embedding_matrix:
+  #  cmd: python scripts/generate_glove_embedding_matrix.py
+  #  deps:
+  #  - data/output/preprocessed/glove_cleaned/training.csv # Données nettoyées avec GloVe
+  #  - data/input/glove.twitter.27B.200d.txt # Fichier contenant les embeddings GloVe
+  #  - scripts/generate_glove_embedding_matrix.py # Script pour générer la matrice d'embedding et le tokenizer
+  #  outs:
+  #  - data/output/vectors/glove_vectors.pkl # Fichier contenant la matrice d'embedding et le tokenizer
+
+  # Étape 5 : Transformation en vecteurs GloVe et découpage en train/test
+  #transform_glove_train_test:
+  #  cmd: python scripts/transform_glove_train_test.py
+  #  deps:
+  #  - data/output/vectors/glove_vectors.pkl # Matrice d'embedding et tokenizer GloVe
+  #  - scripts/transform_glove_train_test.py # Script pour appliquer GloVe et diviser en train/test
+  #  outs:
+  #  - data/output/partitions/traintest/glove_vectors/train.pkl # Vecteurs d'entraînement (format binaire)
+  #  - data/output/partitions/traintest/glove_vectors/test.pkl  # Vecteurs de test (format binaire)
+
+  # Étape 6 : Transformation en vecteurs GloVe et découpage en train/val/test
+  #transform_glove_train_val_test:
+  #  cmd: python scripts/transform_glove_train_val_test.py
+  #  deps:
+  #  - data/output/vectors/glove_vectors.pkl # Matrice d'embedding et tokenizer GloVe
+  #  - scripts/transform_glove_train_val_test.py # Script pour appliquer GloVe et diviser en train/val/test
+  #  outs:
+  #  - data/output/partitions/trainvaltest/glove_vectors/train.pkl # Vecteurs d'entraînement (format binaire)
+  #  - data/output/partitions/trainvaltest/glove_vectors/val.pkl   # Vecteurs de validation (format binaire)
+  #  - data/output/partitions/trainvaltest/glove_vectors/test.pkl  # Vecteurs de test (format binaire)
+
+ 
+

@@ -13,7 +13,7 @@ metrics:
   - "pr_auc"
 
 # Méthode de moyenne (pour le multi-class)
-averageMethod: "binary"
+averageMethod: "macro"
 
 # Contrôle de l'affichage ou non des courbes
 plots:

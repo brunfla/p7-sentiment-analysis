@@ -3,26 +3,49 @@ name: Pipeline
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main  # Déclencher le pipeline sur les pushs vers la branche "main".
+  workflow_dispatch:  # Permet de lancer manuellement le workflow depuis l'interface GitHub Actions.
 
 jobs:
   custom-docker-env:
-    runs-on: self-hosted
+    runs-on: self-hosted  # Utilisation d'un runner self-hosted pour exécuter le pipeline.
     container:
-      image: 10.108.67.191:5000/mlops-env:v1
+      image: 10.108.67.191:5000/mlops-env:v1  # Image Docker personnalisée avec l'environnement MLOps configuré.
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Étape pour cloner le repository sur le runner.
 
       - name: Pull DVC data
-        run: dvc pull
+        run: dvc pull  # Télécharger les données versionnées via DVC depuis le stockage distant.
 
       - name: Reproduce DVC pipeline
-        run: dvc repro
+        run: dvc repro  # Reproduire le pipeline DVC, en exécutant uniquement les étapes nécessaires.
 
       - name: Push DVC data
-        run: dvc push
+        run: dvc push  # Pousser les nouvelles données générées vers le stockage distant DVC.
+
+      - name: Log commit hash and data hash
+        run: |
+          # Obtenir le hash du commit actuel pour relier le modèle au code utilisé.
+          GIT_COMMIT=$(git rev-parse HEAD)
+          echo "Git Commit Hash: $GIT_COMMIT"
+
+          # Obtenir le hash des données utilisées pour garantir la traçabilité avec DVC.
+          DATA_HASH=$(dvc hash data/output/train_ready_data.pkl)
+          echo "Data Hash: $DATA_HASH"
+
+          # Enregistrer les hash dans MLflow comme paramètres du modèle.
+          mlflow run . -P git_commit=$GIT_COMMIT -P data_hash=$DATA_HASH
+
+      - name: Register model in MLflow
+        run: |
+          # Enregistrer le modèle généré dans le registre de modèles MLflow.
+          # Cela inclut le chemin du modèle et son nom (sentiment-analysis-baseline).
+          mlflow models register \
+            --model-uri models:/logistic_regression \
+            --name sentiment-analysis-baseline
 
       - name: Check metrics
-        run: dvc metrics show
+        run: dvc metrics show  # Afficher les métriques stockées dans DVC pour valider la performance.
+

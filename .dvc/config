@@ -4,5 +4,5 @@
 ['remote "myremote"']
     url = s3://dvc
     access_key_id = admin
-    secret_access_key = QvZ2rmkxjb 
-    endpointurl = http://127.0.0.1:31811
+    secret_access_key = Hcy21qpqHP
+    endpointurl = http://minio.local

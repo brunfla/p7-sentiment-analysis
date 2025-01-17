@@ -1,0 +1,8 @@
+type: gloveVectorizer
+embeddingFile: "data/input/glove.6B.50d.txt"
+embeddingSize: 50
+vocabularySize: 10000
+maxLength: 100
+outputPath: "data/output/vectorizer.pkl"
+outputData: "data/output/train_ready_data.pkl"
+input: "data/output/normalize_data.pkl"

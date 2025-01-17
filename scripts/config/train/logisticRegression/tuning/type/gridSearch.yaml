@@ -1,4 +1,0 @@
-type: "gridSearchCV"
-crossValidationFolds: 5
-verbosityLevel: 1
-parallelJobs: -1

@@ -8,8 +8,7 @@ defaults:
   - dataPreprocess/vectorizer@vectorizer: tfidfVectorizer
   - train/logisticRegression@model: model
   - train/logisticRegression@training: training
-  - train/logisticRegression@tuning: tuning
-  - train/logisticRegression/tuning/type@tuningType: gridSearch 
+  - train/logisticRegression/tuning@tuning: none
   - test: test
 
 strategy:

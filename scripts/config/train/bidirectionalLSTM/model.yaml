@@ -1,13 +1,10 @@
 _target_: "bidirectionalLSTM"
 type: "bidirectional_lstm"
 vocab_size: 10000  # Taille du vocabulaire
-embedding_dim: 100  # Dimension des embeddings
-max_length: 100  # Longueur maximale des séquences
-lstm_units:
-  - 128
-  - 64
-dense_units: 32
-dropout_rate: 0.5
+embedding_dim: 50
+  - 128  # Augmenté pour plus de capacité
+dense_units: 64
+dropout_rate: 0.3
 output_activation: "sigmoid"
 loss_function: "binary_crossentropy"
 optimizer: "adam"

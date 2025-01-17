@@ -1,0 +1,238 @@
+# Prétraitement
+preprocess_base_cleaning:
+  input_file: data/input/training.1600000.processed.noemoticon.utf-8.csv
+  output_file: data/output/preprocessed/cleaned/training.csv
+
+preprocess_glove_cleaning:
+  input_file: data/output/preprocessed/cleaned/training.csv
+  glove_file: data/input/glove.twitter.27B.100d.txt
+  output_file: data/output/preprocessed/glove_cleaned/training.csv
+  glove_similarity_threshold: 0.6
+
+generate_glove_embedding_matrix:
+  input_file: data/output/preprocessed/glove_cleaned/training.csv
+  glove_file: data/input/glove.twitter.27B.100d.txt
+  output_file: data/output/vectors/glove_vectors.pkl
+  vocab_size: 20000
+  embedding_dim: 100    
+
+# Découpage des données
+split_data_train_test:
+  input_file: data/output/preprocessed/glove_cleaned/training.csv
+  output_dir: data/output/partitions/traintest/glove_cleaned
+  text_column: tweet
+  label_column: id
+  test_size: 0.3
+  random_state: 42
+
+# Vectorisation
+generate_vectorizer_tfidf:
+  input_file: data/output/partitions/traintest/glove_cleaned/train.csv
+  output_file: data/output/vectorizers/tfidf_train.pkl
+  max_features: 1000
+  text_column: tweet
+
+# Prétraitement avec TF-IDF
+transform_tfidf_train_test:
+  vectorizer_file: data/output/vectorizers/tfidf_train.pkl
+  input_dir: data/output/partitions/traintest/glove_cleaned/
+  output_dir: data/output/partitions/traintest/tfidf_vectors
+  output_labels_dir: data/output/partitions/traintest/labels
+  text_column: tweet
+  label_column: id
+
+# Entraînement des modèles
+train_logistic_tfidf:
+  input_file: data/output/partitions/traintest/tfidf_vectors/train.npz
+  target_file: data/output/partitions/traintest/labels/train_labels.csv
+  output_dir: data/output/experiments/logistic_tfidf/model
+  model_type: logistic_regression
+  tuning:
+    max_iter: 1000
+    tol: 0.001
+  mlflow:
+    trackingUri: "http://mlflow.local"
+    experiment:
+      name: "sentiment-analysis"
+      run:
+        name: "logistic_regression_tfidf"
+        description: "Training Logistic Regression with TF-IDF"
+        min_accuracy: 0.7  # Seuil minimal d'accuracy pour enregistrer le modèle
+        tags:
+          modelType: "logistic_regression"
+          datasetVersion: "v1.0"
+
+test_logistic_tfidf:
+  input_file: data/output/partitions/traintest/tfidf_vectors/test.npz
+  label_file: data/output/partitions/traintest/labels/test_labels.csv
+  model_run_id_file: data/output/experiments/logistic_tfidf/model/mlflow_id.json
+  output_file: data/output/experiments/logistic_tfidf/metrics/metrics.json
+  threshold: 0.5
+  mlflow:
+    trackingUri: "http://mlflow.local"
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
+
+transform_glove_train_test:
+  input_file: data/output/vectors/glove_vectors.pkl
+  data_file: data/output/preprocessed/glove_cleaned/training.csv  # Fichier texte nettoyé
+  output_dir: data/output/partitions/traintest/glove_vectors
+  text_column: tweet
+  label_column: id
+  test_size: 0.3
+  random_state: 42
+  max_length: 100
+
+transform_glove_train_val_test:
+  input_file: data/output/vectors/glove_vectors.pkl  # Fichier contenant la matrice et le tokenizer
+  data_file: data/output/preprocessed/glove_cleaned/training.csv  # Fichier texte nettoyé
+  output_dir: data/output/partitions/trainvaltest/glove_vectors
+  text_column: tweet
+  label_column: id
+  test_size_val: 0.2
+  test_size_test: 0.2
+  random_state: 42
+  max_length: 100
+
+
+train_logistic_tfidf_glove:
+  input_file: data/output/partitions/traintest/tfidf_glove/train.csv
+  output_dir: data/output/experiments/logistic_tfidf_glove/model
+  model_type: logistic_regression
+  tuning:
+    type: grid_search
+    cv: 5
+    verbosityLevel: 2
+    parallelJobs: -1
+    paramGrid:
+      penalty: ["l1", "l2"]
+      C: [0.1, 1, 10]
+      solver: ["liblinear"]
+  mlflow:
+    trackingUri: "http://mlflow.local"
+    experiment:
+      name: "sentiment-analysis"
+      run:
+        name: "logistic_regression_tfidf_glove"
+        description: "Training Logistic Regression with TF-IDF / Glove"
+        tags:
+          modelType: "logistic_regression"
+          datasetVersion: "v1.0"
+
+
+test_logistic_tfidf_glove:
+  input_file: data/output/partitions/traintest/tfidf_glove/test.csv
+  model_run_id_file: data/output/experiments/logistic_tfidf_glove/model/mlflow_id.json
+  output_file: data/output/experiments/logistic_tfidf_glove/metrics/metrics.json
+  threshold: 0.5
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
+
+train_lstm_bidirectional_with_glove:
+  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+  glove_vectors_file: data/output/vectors/glove_vectors.pkl              # Fichier contenant les vecteurs GloVe générés
+  output_dir: data/output/experiments/lstm_with_glove/model
+  model_params:
+    max_length: 100                   # Longueur maximale des séquences
+    lstm_units:                       # Nombre de neurones dans les couches LSTM
+      - 128                           # Première couche LSTM
+      - 64                            # Deuxième couche LSTM
+    dropout_rate: 0.3                 # Taux de dropout
+    dense_units: 32                   # Taille de la couche dense
+    batch_size: 32                    # Taille des batchs
+    epochs: 20                        # Nombre d'époques
+  training_params:
+    earlyStopping:                    # Paramètres pour le callback EarlyStopping
+      enabled: true                   # Activer/désactiver EarlyStopping
+      monitor: val_loss               # Métrique surveillée
+      patience: 3                     # Patience avant arrêt
+      mode: min                       # Mode pour la surveillance (minimisation de la perte)
+    learningRateScheduler:            # Paramètres pour le scheduler de taux d'apprentissage
+      enabled: true                   # Activer/désactiver le scheduler
+      monitor: val_loss               # Métrique surveillée
+      factor: 0.5                     # Facteur de réduction du taux d'apprentissage
+      patience: 2                     # Patience avant réduction
+      min_lr: 1e-5                    # Taux d'apprentissage minimal
+    thresholdStop:                    # Paramètres pour StopIfBelowThreshold
+      enabled: true                   # Activer/désactiver le callback
+      threshold: 0.6                  # Seuil minimal de la métrique
+      metric: accuracy                # Métrique surveillée
+      patience_batches: 10            # Nombre de batches consécutifs autorisés sous le seuil
+  mlflow:                             # Configuration de MLflow
+    trackingUri: http://mlflow.local  # URI de suivi pour MLflow
+    experiment:
+      name: sentiment-analysis        # Nom de l'expérience MLflow
+      run:
+        name: lstm_bidirectional_with_glove  # Nom du run
+        description: Training with bidirectional LSTM and GloVe embeddings
+        tags:                         # Tags pour le suivi MLflow
+          model: lstm_bidirectional
+          dataset: glove_cleaned
+
+test_lstm_bidirectional_with_glove:
+  input_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+  model_run_id_file: data/output/experiments/lstm_with_glove/model/mlflow_id.json
+  output_file: data/output/experiments/lstm_with_glove/metrics/metrics.json
+  threshold: 0.5
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
+
+train_bert_with_glove:
+  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+  output_dir: data/output/experiments/bert_with_glove/model
+  model_params:
+    max_length: 128
+    batch_size: 32
+    epochs: 10
+  training_params:
+    earlyStopping:
+      enabled: true
+      monitor: val_loss
+      patience: 3
+      mode: min
+    learningRateScheduler:
+      enabled: true
+      factor: 5e-5  # Taux d'apprentissage initial
+      warmup_ratio: 0.1  # Ratio de warmup
+  mlflow:
+    trackingUri: http://mlflow.local
+    experiment:
+      name: sentiment-analysis
+      run:
+        name: bert_with_glove
+        description: Training DistilBERT with GloVe embeddings
+        tags:
+          model: distilbert
+          dataset: glove_cleaned
+
+test_bert_with_glove:
+  input_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+  model_dir: data/output/experiments/bert_with_glove/model
+  output_file: data/output/experiments/bert_with_glove/metrics/metrics.json
+
+# Comparaison des modèles
+compare_models:
+  models_dirs:
+    - data/output/experiments/logistic_tfidf/model
+    - data/output/experiments/logistic_tfidf_glove/model
+    - data/output/experiments/lstm_with_glove/model
+    - data/output/experiments/bert_with_glove/model
+  output_file: data/output/reports/comparison.json
+

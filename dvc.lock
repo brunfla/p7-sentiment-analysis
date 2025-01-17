@@ -1,89 +1,641 @@
 schema: '2.0'
 stages:
-  generate_config:
-    cmd: python scripts/generate_config.py
-    deps:
-    - path: scripts/config
-      md5: a7e29e56d5b0c55552fa7f6ae52c2cad.dir
-      size: 6595
-      nfiles: 26
-    outs:
-    - path: data/output/clean_data_config.yaml
-      md5: bd8b500d2bb21f9ea4b95e63c97f9b2a
-      size: 263
-      isexec: true
-    - path: data/output/model_config.yaml
-      md5: 4b69dcfb3dff1f94fc3f21145c7d3933
-      size: 157
-      isexec: true
-    - path: data/output/normalize_data_config.yaml
-      md5: e70de9f761a13b57bfd1d82737eda79c
-      size: 119
-      isexec: true
-    - path: data/output/split_data_config.yaml
-      md5: 55e1682465fb61448c4766298e073ee7
-      size: 122
-      isexec: true
-    - path: data/output/test_config.yaml
-      md5: 8bcbb6345b145752aac08cc11aae1ac1
-      size: 245
-      isexec: true
-    - path: data/output/train_config.yaml
-      md5: 04836bcfa1b3a5f677611dce0e358d21
-      size: 18
-      isexec: true
-    - path: data/output/vectorize_data_config.yaml
-      md5: 1e0007177b7ff23028aa34d2b1c0f0ea
-      size: 222
-      isexec: true
-  clean_data:
-    cmd: python scripts/clean_data.py
+  split_crossvalidation:
+    cmd: python scripts/split_crossvalidation.py
     deps:
     - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
       md5: 2404eb1a5fde3c5e9411b81f899c4980
       size: 238942690
-    - path: data/output/clean_data_config.yaml
-      md5: bd8b500d2bb21f9ea4b95e63c97f9b2a
-      size: 263
-    - path: scripts/clean_data.py
-      md5: 75d05911c49d5dd31469f09716efa404
-      size: 3493
+    - path: scripts/split_crossvalidation.py
+      md5: c52e1b128b3f2ed4b44e2047296d8193
+      size: 1297
     outs:
-    - path: data/output/clean_data.csv
-      md5: fb9958691cf6e65a800dfa562ec51490
-      size: 200250590
+    - path: data/output/partitions/crossValidation/train_fold_0.csv
+      md5: c4a6a7a9ba54a1325921a8e77a2438fb
+      size: 176395251
       isexec: true
-  split_data:
-    cmd: python scripts/split_data.py
+    - path: data/output/partitions/crossValidation/train_fold_1.csv
+      md5: 3cd50bd1a348c4d21a12b1f55b86f69a
+      size: 176407183
+      isexec: true
+    - path: data/output/partitions/crossValidation/train_fold_2.csv
+      md5: 9c86b02bdd00daac90a5777bfea590f6
+      size: 176392792
+      isexec: true
+    - path: data/output/partitions/crossValidation/train_fold_3.csv
+      md5: 5ae86a6c74c2af38124a697db7e64e45
+      size: 176368632
+      isexec: true
+    - path: data/output/partitions/crossValidation/train_fold_4.csv
+      md5: 7fa1f4c1385a9391bab35718382b8d32
+      size: 176352181
+      isexec: true
+    - path: data/output/partitions/crossValidation/val_fold_0.csv
+      md5: f971534a907682fcba8009f38bbb0333
+      size: 44083785
+      isexec: true
+    - path: data/output/partitions/crossValidation/val_fold_1.csv
+      md5: 86003e5cb8f05c4dba6f4d516e58c983
+      size: 44071853
+      isexec: true
+    - path: data/output/partitions/crossValidation/val_fold_2.csv
+      md5: ee8ebecbe7e7c700eac7b455bc3e26d3
+      size: 44086244
+      isexec: true
+    - path: data/output/partitions/crossValidation/val_fold_3.csv
+      md5: c53badec79059457a9c8bec086448faa
+      size: 44110404
+      isexec: true
+    - path: data/output/partitions/crossValidation/val_fold_4.csv
+      md5: 5de61c189f874647171dca9f91461e8f
+      size: 44126855
+      isexec: true
+  split_traintest:
+    cmd: python scripts/split_traintest.py
     deps:
-    - path: data/output/clean_data.csv
-      md5: fb9958691cf6e65a800dfa562ec51490
-      size: 200250590
-    - path: data/output/split_data_config.yaml
-      md5: 55e1682465fb61448c4766298e073ee7
-      size: 122
-    - path: scripts/split_data.py
-      md5: bb5bf446532640791f56477fe267f4c3
-      size: 5120
+    - path: data/output/preprocessed/cleaned/training.csv
+      md5: 27482f1b5e81ed7de3a39577ff193e57
+      size: 73091401
+    - path: scripts/split_traintest.py
+      md5: 22f3c7752adb5f77527dadd6e833518a
+      size: 3940
     outs:
-    - path: data/output/split_data.pkl
-      md5: 5cd2d941543d2904711b11e81b0e6202
-      size: 166983787
-      isexec: true
-  normalize_data:
-    cmd: python scripts/normalize_data.py
+    - path: data/output/partitions/traintest/cleaned/test.csv
+      md5: af06a88629c381ddafa2ebbfefc2e801
+      size: 21934617
+    - path: data/output/partitions/traintest/cleaned/train.csv
+      md5: 96133a9de16ddba1e76b92722fe496ca
+      size: 51156793
+  train_lstm_bidirectional:
+    cmd: python scripts/train_lstm_bidirectional.py
     deps:
-    - path: data/output/normalize_data_config.yaml
-      md5: e70de9f761a13b57bfd1d82737eda79c
-      size: 119
-    - path: data/output/split_data.pkl
-      md5: 5cd2d941543d2904711b11e81b0e6202
-      size: 166983787
-    - path: scripts/normalize_data.py
-      md5: 16dda091ff4efaa09be91882ce0386d4
-      size: 5000
-    outs:
-    - path: data/output/normalize_data.pkl
-      md5: bd44b028fa1aed418cc1185c8fea56e6
-      size: 139605929
+    - path: data/output/partitions/trainValTest_glove/train.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/partitions/trainValTest_glove/val.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
       isexec: true
+    outs:
+    - path: data/output/model/lstm_bidirectional/mlflow_id.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/model/lstm_bidirectional/model.pkl
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+  test_regression:
+    cmd: python scripts/test_regression.py
+    deps:
+    - path: data/output/model/regression/metrics.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/model/regression/mlflow_id.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/partitions/trainValTest/test.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+    outs:
+    - path: data/output/model/regression/model_metrics.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+  test_lstm_bidirectional:
+    cmd: python scripts/test_lstm_bidirectional.py
+    deps:
+    - path: data/output/model/lstm_bidirectional/metrics.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+    - path: data/output/model/lstm_bidirectional/mlflow_id.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/partitions/trainValTest/test.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    outs:
+    - path: data/output/model/lstm_bidirectional/model_metrics.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+  split_trainvaltest:
+    cmd: python scripts/split_trainvaltest.py
+    deps:
+    - path: data/output/training.1600000.processed.noemoticon.cleaned_with_glove.utf-8.csv
+      md5: 89bb73c695b8db9d9150d25192b28ff2
+      size: 163094827
+    - path: scripts/split_trainvaltest.py
+      md5: 5406160508f1cd3334e53eaaf7f1923a
+      size: 2043
+    outs:
+    - path: data/output/partitions/trainValTest/test.csv
+      md5: b289635ddad05fa717c67f83851cd9e3
+      size: 24461501
+      isexec: true
+    - path: data/output/partitions/trainValTest/train.csv
+      md5: f800ec37138de9ef4a61a268611e7ed8
+      size: 114174698
+      isexec: true
+    - path: data/output/partitions/trainValTest/val.csv
+      md5: 43bb4206227a4ac6adc39a89115a8afe
+      size: 24458698
+      isexec: true
+  preprocess_tfidf:
+    cmd: python scripts/preprocess_tfidf.py
+    deps:
+    - path: data/output/partitions/traintest/cleaned/test.csv
+      md5: af06a88629c381ddafa2ebbfefc2e801
+      size: 21934617
+    - path: data/output/partitions/traintest/cleaned/train.csv
+      md5: 96133a9de16ddba1e76b92722fe496ca
+      size: 51156793
+    - path: data/output/vectorizers/tfidf.pkl
+      md5: 6055f6dc61a7a2026a4b94f9b4b37b38
+      size: 359126
+    - path: scripts/preprocess_tfidf.py
+      md5: de34aa026f6eef60958c7f879924bce4
+      size: 4593
+    outs:
+    - path: data/output/partitions/traintest/tfidf/test.csv
+      md5: 764dc55f91b5fad4e45e548bf863e223
+      size: 18481929
+    - path: data/output/partitions/traintest/tfidf/train.csv
+      md5: b1e9c5481659f2f9d49c6579ed2f7acd
+      size: 43150411
+  train_regression:
+    cmd: python scripts/train_lstm_regression.py
+    deps:
+    - path: data/output/partitions/trainValTest_tfidf/train.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/partitions/trainValTest_tfidf/val.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    outs:
+    - path: data/output/model/regression/mlflow_id.json
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/model/regression/model.pkl
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+  preprocess_glove:
+    cmd: python scripts/preprocess_glove.py
+    deps:
+    - path: data/input/glove.twitter.27B.200d.txt
+      md5: e44cdc3e10806b5137055eeb08850569
+      size: 2057590469
+    - path: data/output/partitions/trainValTest/test.csv
+      md5: ccb401daf513966a83bee65790598ff0
+      size: 33075009
+    - path: data/output/partitions/trainValTest/train.csv
+      md5: 1ccd4ea5042e3dfd219db13c9cbcddaa
+      size: 154327358
+    - path: data/output/partitions/trainValTest/val.csv
+      md5: 16f7ee5528e4d9162d344a8641fbccf4
+      size: 33076704
+    - path: scripts/preprocess_with_glove.py
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+    outs:
+    - path: data/output/partitions/trainValTest_glove/test.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+      isexec: true
+    - path: data/output/partitions/trainValTest_glove/train.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+    - path: data/output/partitions/trainValTest_glove/val.csv
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
+  preprocess_batch_cleaning:
+    cmd: python scripts/preprocess_batch_cleaning.py
+    deps:
+    - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
+      md5: 2404eb1a5fde3c5e9411b81f899c4980
+      size: 238942690
+    - path: scripts/preprocess_batch_cleaning.py
+      md5: 458aaa69f92a021e0f2e179ade360fb7
+      size: 2821
+    - path: scripts/preprocess_common.py
+      md5: 70550d9cf902975463dfa1db9fff7b3b
+      size: 2989
+    outs:
+    - path: data/output/training.1600000.processed.noemoticon.cleaned.utf-8.csv
+      md5: c2be4b01ed30c73d54e34182e16b7340
+      size: 168909994
+      isexec: true
+  generate_vectorizer_tfidf:
+    cmd: python scripts/generate_vectorizer_tfidf.py
+    deps:
+    - path: data/output/partitions/traintest/glove_cleaned/train.csv
+      hash: md5
+      md5: ec56280a1d395e9e3c58e6e9c7d3ed25
+      size: 47306647
+      isexec: true
+    - path: scripts/generate_vectorizer_tfidf.py
+      md5: 4c0eaf921c6d89f34a9517f2fcce0864
+      size: 3006
+      isexec: true
+    params:
+      params.yaml:
+        generate_vectorizer_tfidf.max_features: 1000
+        generate_vectorizer_tfidf.text_column: tweet
+    outs:
+    - path: data/output/vectorizers/tfidf_train.pkl
+      hash: md5
+      md5: 52789d6ddd8afc39a0b89de72e41f557
+      size: 35793
+      isexec: true
+  preprocess_batch_cleaning_with_glove:
+    cmd: python scripts/preprocess_batch_cleaning_with_glove.py
+    deps:
+    - path: data/input/glove.twitter.27B.200d.txt
+      md5: e44cdc3e10806b5137055eeb08850569
+      size: 2057590469
+    - path: data/output/training.1600000.processed.noemoticon.cleaned.utf-8.csv
+      md5: c2be4b01ed30c73d54e34182e16b7340
+      size: 168909994
+    - path: scripts/preprocess_batch_cleaning_with_glove.py
+      md5: f2d6b37ef64c232f778da53b8c19b5c4
+      size: 3664
+    outs:
+    - path: data/output/training.1600000.processed.noemoticon.cleaned_with_glove.utf-8.csv
+      md5: 89bb73c695b8db9d9150d25192b28ff2
+      size: 163094827
+      isexec: true
+  preprocess_cleaning:
+    cmd: python scripts/preprocess_cleaning.py
+    deps:
+    - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
+      md5: 2404eb1a5fde3c5e9411b81f899c4980
+      size: 238942690
+    - path: scripts/preprocess_cleaning.py
+      md5: ffb3f6b41ca59961c7454d7d79749d33
+      size: 3261
+    - path: scripts/preprocess_common.py
+      md5: 70550d9cf902975463dfa1db9fff7b3b
+      size: 2989
+    outs:
+    - path: data/output/preprocessed/cleaned/training.csv
+      md5: 27482f1b5e81ed7de3a39577ff193e57
+      size: 73091401
+      isexec: true
+  vectorizer_tfidf:
+    cmd: python scripts/vectorizer_tfidf.py
+    deps:
+    - path: data/output/partitions/traintest/cleaned/train.csv
+      md5: 96133a9de16ddba1e76b92722fe496ca
+      size: 51156793
+    - path: scripts/vectorizer_tfidf.py
+      md5: 2f80b95b5e0e309bf67189a21d69e015
+      size: 2280
+    outs:
+    - path: data/output/vectorizers/tfidf.pkl
+      md5: 6055f6dc61a7a2026a4b94f9b4b37b38
+      size: 359126
+  preprocess_cleaning_with_glove:
+    cmd: python scripts/preprocess_cleaning_with_glove.py
+    deps:
+    - path: data/input/glove.twitter.27B.200d.txt
+      md5: e44cdc3e10806b5137055eeb08850569
+      size: 2057590469
+    - path: data/output/preprocessed/cleaned/training.csv
+      md5: 27482f1b5e81ed7de3a39577ff193e57
+      size: 73091401
+    - path: scripts/preprocess_cleaning_with_glove.py
+      md5: 336ef6176bba0d28cfed57e3ef00689d
+      size: 4186
+    outs:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+      isexec: true
+  split_trainvaltest_glove:
+    cmd: python scripts/split_trainvaltest_glove.py
+    deps:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+    - path: scripts/split_trainvaltest_glove.py
+      md5: d83ba3b133d23572285ee9d3a20e92b8
+      size: 3599
+    outs:
+    - path: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+      md5: eb1875046a76566e6c813a44d6db82d3
+      size: 13510300
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+      md5: e404af22b12c160985159325c7749ee8
+      size: 40553661
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+      md5: 3ca5884294d8d78a9e483fbf608f242f
+      size: 13505175
+      isexec: true
+  split_traintest_glove:
+    cmd: python scripts/split_traintest_glove.py
+    deps:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+    - path: scripts/split_traintest_glove.py
+      md5: a0607a015d528083a48d4b8ef9ea29ea
+      size: 1221
+    outs:
+    - path: data/output/partitions/traintest/glove_cleaned/test.csv
+      md5: dc382f0b31367b9ea963f7117a3746aa
+      size: 20262480
+      isexec: true
+    - path: data/output/partitions/traintest/glove_cleaned/train.csv
+      md5: ec56280a1d395e9e3c58e6e9c7d3ed25
+      size: 47306647
+      isexec: true
+  vectorizer_tfidf_glove:
+    cmd: python scripts/vectorizer_tfidf_glove.py
+    deps:
+    - path: data/output/partitions/traintest/glove_cleaned/train.csv
+      md5: ec56280a1d395e9e3c58e6e9c7d3ed25
+      size: 47306647
+    - path: scripts/vectorizer_tfidf_glove.py
+      md5: f332c1158870d5515b51ebe47b41f287
+      size: 1073
+    outs:
+    - path: data/output/vectorizers/tfidf_glove.pkl
+      md5: 6ee07e86fef84f82d91fd71624799199
+      size: 360035
+      isexec: true
+  preprocess_tfidf_glove:
+    cmd: python scripts/preprocess_tfidf_glove.py
+    deps:
+    - path: data/output/partitions/traintest/glove_cleaned/test.csv
+      md5: dc382f0b31367b9ea963f7117a3746aa
+      size: 20262480
+    - path: data/output/partitions/traintest/glove_cleaned/train.csv
+      md5: ec56280a1d395e9e3c58e6e9c7d3ed25
+      size: 47306647
+    - path: data/output/vectorizers/tfidf_glove.pkl
+      md5: 6ee07e86fef84f82d91fd71624799199
+      size: 360035
+    - path: scripts/preprocess_tfidf_glove.py
+      md5: 9d27fa644f81559f6e67a5c7b30caa79
+      size: 1030
+    outs:
+    - path: data/output/partitions/traintest/tfidf_glove/test.csv
+      md5: 55efd2ed1f3933fe1b1c867dbd7244b4
+      size: 18323750
+      isexec: true
+    - path: data/output/partitions/traintest/tfidf_glove/train.csv
+      md5: b80977e04b585f6beafed7801541aa48
+      size: 42808174
+      isexec: true
+  validate_data:
+    cmd: python scripts/validate_data.py
+    deps:
+    - path: data/output/partitions/traintest/glove_cleaned/test.csv
+      md5: dc382f0b31367b9ea963f7117a3746aa
+      size: 20262480
+    - path: data/output/partitions/traintest/glove_cleaned/train.csv
+      md5: ec56280a1d395e9e3c58e6e9c7d3ed25
+      size: 47306647
+    - path: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+      md5: eb1875046a76566e6c813a44d6db82d3
+      size: 13510300
+    - path: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+      md5: e404af22b12c160985159325c7749ee8
+      size: 40553661
+    - path: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+      md5: 3ca5884294d8d78a9e483fbf608f242f
+      size: 13505175
+  test_distilbert_pretrained:
+    cmd: python scripts/test_distilbert_pretrained.py
+    deps:
+    - path: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+      md5: eb1875046a76566e6c813a44d6db82d3
+      size: 13510300
+    - path: scripts/test_distilbert_pretrained.py
+      md5: 7ebd259861fd6b29b39b378778df8b20
+      size: 2860
+    outs:
+    - path: data/output/models/distilbert_pretrained/metrics.json
+      md5: 4b942237c82cfdaea593fbeeced7bfe4
+      size: 139
+      isexec: true
+  preprocess_base_cleaning:
+    cmd: python scripts/preprocess_base_cleaning.py
+    deps:
+    - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
+      md5: 2404eb1a5fde3c5e9411b81f899c4980
+      size: 238942690
+    - path: scripts/preprocess_base_cleaning.py
+      md5: 3a8357e23cae2e999fe2c13fde8befc5
+      size: 3260
+    - path: scripts/preprocess_utils.py
+      md5: 70550d9cf902975463dfa1db9fff7b3b
+      size: 2989
+    outs:
+    - path: data/output/preprocessed/cleaned/training.csv
+      md5: 27482f1b5e81ed7de3a39577ff193e57
+      size: 73091401
+      isexec: true
+  preprocess_glove_cleaning:
+    cmd: python scripts/preprocess_glove_cleaning.py
+    deps:
+    - path: data/input/glove.twitter.27B.100d.txt
+      hash: md5
+      md5: ccbdddec6b9610196dd2e187635fee63
+      size: 1021669379
+      isexec: true
+    - path: data/output/preprocessed/cleaned/training.csv
+      md5: 27482f1b5e81ed7de3a39577ff193e57
+      size: 73091401
+      isexec: true
+    - path: scripts/preprocess_glove_cleaning.py
+      md5: 336ef6176bba0d28cfed57e3ef00689d
+      size: 4186
+      isexec: true
+    params:
+      params.yaml:
+        preprocess_glove_cleaning.glove_similarity_threshold: 0.6
+    outs:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+      isexec: true
+  split_data_train_test:
+    cmd: python scripts/split_data_train_test.py
+    deps:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      hash: md5
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+      isexec: true
+    - path: scripts/split_data_train_test.py
+      md5: 22f3c7752adb5f77527dadd6e833518a
+      size: 3940
+      isexec: true
+    params:
+      params.yaml:
+        split_data_train_test.label_column: id
+        split_data_train_test.random_state: 42
+        split_data_train_test.test_size: 0.3
+        split_data_train_test.text_column: tweet
+    outs:
+    - path: data/output/partitions/traintest/glove_cleaned/
+      hash: md5
+      md5: 51c8851352770f26e21bd0cc0d5acda3.dir
+      size: 67569127
+      nfiles: 2
+  generate_glove_embedding_matrix:
+    cmd: python scripts/generate_glove_embedding_matrix.py
+    deps:
+    - path: data/input/glove.twitter.27B.100d.txt
+      hash: md5
+      md5: ccbdddec6b9610196dd2e187635fee63
+      size: 1021669379
+      isexec: true
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+      isexec: true
+    - path: scripts/generate_glove_embedding_matrix.py
+      md5: 0a73d44850a362ebd14562d5ad8c7bcf
+      size: 2972
+      isexec: true
+    params:
+      params.yaml:
+        generate_glove_embedding_matrix.embedding_dim: 100
+        generate_glove_embedding_matrix.vocab_size: 20000
+    outs:
+    - path: data/output/vectors/glove_vectors.pkl
+      hash: md5
+      md5: 0167eb7e462fbd50095e6a2b62b4f0d9
+      size: 98727191
+      isexec: true
+  transform_glove_train_test:
+    cmd: python scripts/transform_glove_train_test.py
+    deps:
+    - path: data/output/vectors/glove_vectors.pkl
+      md5: 6503abf08bea8a64b5bdfad12a3ebd9f
+      size: 98727191
+    - path: scripts/transform_glove_train_test.py
+      md5: 7851d439cbdf1a7f02ac3498cb839236
+      size: 3514
+    outs:
+    - path: data/output/partitions/traintest/glove_vectors/test.pkl
+      md5: 6e569ba3ab61fb83f15fe841c98ddf77
+      size: 191487124
+      isexec: true
+    - path: data/output/partitions/traintest/glove_vectors/train.pkl
+      md5: 824839df96b5f24b52ff117fe80cad5d
+      size: 446802383
+      isexec: true
+  transform_glove_train_val_test:
+    cmd: python scripts/transform_glove_train_val_test.py
+    deps:
+    - path: data/output/vectors/glove_vectors.pkl
+      md5: 6503abf08bea8a64b5bdfad12a3ebd9f
+      size: 98727191
+    - path: scripts/transform_glove_train_val_test.py
+      md5: 563285bad298065197345d659c7e8b07
+      size: 4056
+    outs:
+    - path: data/output/partitions/trainvaltest/glove_vectors/test.pkl
+      md5: 1fbb76de63924822d0f5d186b9bdafab
+      size: 127658005
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_vectors/train.pkl
+      md5: 373c6270b53b91cc8e057fc776ec59fa
+      size: 382973675
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_vectors/val.pkl
+      md5: 6c59a732d9c09bcde7b1f2d30600306f
+      size: 127658005
+      isexec: true
+  transform_tfidf_train_test:
+    cmd: python scripts/transform_tfidf_train_test.py
+    deps:
+    - path: data/output/partitions/traintest/glove_cleaned/
+      hash: md5
+      md5: 51c8851352770f26e21bd0cc0d5acda3.dir
+      size: 67569127
+      nfiles: 2
+    - path: data/output/vectorizers/tfidf_train.pkl
+      hash: md5
+      md5: 52789d6ddd8afc39a0b89de72e41f557
+      size: 35793
+      isexec: true
+    - path: scripts/transform_tfidf_train_test.py
+      hash: md5
+      md5: 8cab8f669664b432c550e915553e5bef
+      size: 4762
+      isexec: true
+    params:
+      params.yaml:
+        transform_tfidf_train_test.label_column: id
+        transform_tfidf_train_test.text_column: tweet
+    outs:
+    - path: data/output/partitions/traintest/labels/
+      hash: md5
+      md5: 8d6c4bf76e6acb5ac1ff132a7bfd1d5e.dir
+      size: 3175556
+      nfiles: 2
+    - path: data/output/partitions/traintest/tfidf_vectors/
+      hash: md5
+      md5: d1cc4f4dcc742b1a207129d5f1940357.dir
+      size: 69120132
+      nfiles: 2
+  train_logistic_tfidf:
+    cmd: python scripts/train_logistic_tfidf.py
+    deps:
+    - path: data/output/partitions/traintest/labels/train_labels.csv
+      hash: md5
+      md5: b6532d990e2f41e7a72695200f9b31b1
+      size: 2222887
+      isexec: true
+    - path: data/output/partitions/traintest/tfidf_vectors/train.npz
+      hash: md5
+      md5: 73024730cf1536ca86b9fa219f5bda5c
+      size: 48376656
+      isexec: true
+    - path: scripts/train_logistic_tfidf.py
+      hash: md5
+      md5: 92622f75e5005519d07585f774782c04
+      size: 7193
+      isexec: true
+    outs:
+    - path: data/output/experiments/logistic_tfidf/model
+      hash: md5
+      md5: 2d11332358a245bca8357600422b7689.dir
+      size: 9883
+      nfiles: 6
+  test_logistic_tfidf:
+    cmd: python scripts/test_logistic_tfidf.py
+    deps:
+    - path: data/output/experiments/logistic_tfidf/model
+      hash: md5
+      md5: 2d11332358a245bca8357600422b7689.dir
+      size: 9883
+      nfiles: 6
+    - path: data/output/partitions/traintest/labels/test_labels.csv
+      hash: md5
+      md5: 2214f47c7a9f76da6563d9cc4f1aaf4a
+      size: 952669
+      isexec: true
+    - path: data/output/partitions/traintest/tfidf_vectors/test.npz
+      hash: md5
+      md5: ed3282600f25542b2434ebd4255b1d0e
+      size: 20743476
+      isexec: true
+    - path: scripts/test_logistic_tfidf.py
+      hash: md5
+      md5: 37e388e2c213456d8b56399887393dfb
+      size: 5413
+      isexec: true
+    outs:
+    - path: data/output/experiments/logistic_tfidf/metrics/
+      hash: md5
+      md5: b5e8f993548c2da0d32f21fcab7c8fbb.dir
+      size: 208
+      nfiles: 1

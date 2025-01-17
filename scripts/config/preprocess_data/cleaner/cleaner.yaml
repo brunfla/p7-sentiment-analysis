@@ -1,0 +1,28 @@
+_version_: "v1"
+_target_: "cleaner"
+
+# Étapes de nettoyage initial
+remove_urls: true
+remove_mentions: true
+remove_hashtags: true
+lowercase: true
+remove_punctuation: true
+strip_whitespace: true
+
+# Suppression des stopwords et lemmatisation
+remove_stopwords: true
+lemmatize: true
+
+# Paramètres pour TF-IDF
+tfidf_min_threshold: 0.1
+
+# Paramètres pour GloVe
+glove_path: "./data/input/glove.twitter.27B.200d.txt"  # Chemin vers les embeddings GloVe
+glove_threshold: 0.6  # Seuil pour corriger les mots similaires
+
+# Gestion des mots longs
+max_word_length: 20  # Supprimer les mots dépassant cette longueur
+
+# Chemins des fichiers
+input: "./data/input/training.1600000.processed.noemoticon.utf-8.csv"
+output: "./data/output/clean_data.csv"

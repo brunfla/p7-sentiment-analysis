@@ -1,0 +1,48 @@
+model:
+  _target_: "bidirectionalLSTM"
+  type: "bidirectional_lstm"
+  vocab_size: 10000  # Taille du vocabulaire
+  embedding_dim: 50
+    - 128  # Augmenté pour plus de capacité
+  dense_units: 64
+  dropout_rate: 0.3
+  output_activation: "sigmoid"
+  loss_function: "binary_crossentropy"
+  optimizer: "adam"
+  metrics:
+    - "accuracy"
+  batch_size: 32
+  epochs: 5
+
+training:
+  input: "data/output/train_ready_data.pkl"
+  earlyStopping:
+    enabled: true
+    patience: 3
+    monitor: "val_loss"
+    mode: "min"
+
+  thresholdStop:
+    enabled: true
+    threshold: 0.6           # Arrête si la précision est en dessous de 60%
+    metric: "accuracy"       # Surveille la précision
+    patience_batches: 20     # Autorise 20 mini-batches consécutifs avant l'arrêt
+
+  learningRateScheduler:
+    enabled: true
+    factor: 0.5
+    patience: 2
+    min_lr: 1e-5
+    monitor: "val_loss"
+
+tuning:
+  type: "grid_search"
+  grid_search:
+    cv: 3
+    verbosityLevel: 1
+    parallelJobs: -1
+    paramGrid:
+      penalty: ["l1", "l2"]
+      C: [0.1, 1, 10]
+      solver: ["liblinear", "saga"]
+      max_iter: [1000, 2000]

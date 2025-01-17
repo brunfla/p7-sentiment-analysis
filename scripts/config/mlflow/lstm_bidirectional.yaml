@@ -7,8 +7,8 @@ trackingUri: "http://mlflow.local"
 experiment:
   name: "p7-sentiment-analysis"
   run:
-    name: "logistic_regression_run"  # Nom de l'exécution MLflow
-    description: "Training with logistic regression"  # Description de l'exécution
+    name: "lstm_bidirectionnal"  # Nom de l'exécution MLflow
+    description: "Training with LSTM bidirectionnelle"  # Description de l'exécution
     tags:  # Métadonnées supplémentaires
-      modelType: "logistic_regression"
+      modelType: "lstm_bidirectionnal"
       datasetVersion: "v1.0"

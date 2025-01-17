@@ -1,6 +1,4 @@
 _target_: "logisticRegression"
-name: "logistic_regression_model"
-version: "1.0"
 type: "logistic_regression"
 parameters:
   solver: "liblinear"

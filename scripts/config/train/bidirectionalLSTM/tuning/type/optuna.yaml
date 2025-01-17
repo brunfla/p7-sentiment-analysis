@@ -1,4 +1,0 @@
-type: "optuna"
-trialCount: 50               # Nombre maximum d'essais pour Optuna
-timeLimitSeconds: 1200       # Temps limite en secondes pour le tuning
-optimizationDirection: "maximize"  # Maximiser une métrique (ex: validation accuracy)

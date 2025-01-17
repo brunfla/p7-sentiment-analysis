@@ -1,4 +1,0 @@
-_target_: "lemmatization"
-model: "en_core_web_sm"  # Modèle SpaCy à utiliser pour la lemmatisation
-input: "data/output/split_data.pkl"
-output: "data/output/normalize_data.pkl"     # Où sauvegarder le vectoriseur

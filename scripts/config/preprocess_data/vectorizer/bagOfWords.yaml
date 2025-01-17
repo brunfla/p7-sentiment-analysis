@@ -1,0 +1,14 @@
+# Type de vectorisation : "count" pour Bag of Words
+_target_: "countVectorizer"
+type: "countVectorizer"
+
+input: "data/output/normalize_data.pkl"
+# Chemins pour la sauvegarde ou le chargement
+outputPath: "data/output/vectorizer.pkl"      # Où sauvegarder le vectoriseur
+outputData: "data/output/train_ready_data.pkl"  # Où sauvegarder les données transformées
+
+# Options additionnelles éventuelles pour CountVectorizer
+min_df: 1
+max_df: 1.0
+ngram_range: [1, 1]
+stop_words: null

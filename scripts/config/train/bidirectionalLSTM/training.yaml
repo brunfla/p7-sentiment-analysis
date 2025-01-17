@@ -4,9 +4,19 @@ earlyStopping:
   monitor: "val_loss"
   mode: "min"
 
+thresholdStop:
+  enabled: true
+  threshold: 0.6           # Arrête si la précision est en dessous de 60%
+  metric: "accuracy"       # Surveille la précision
+  patience_batches: 20     # Autorise 20 mini-batches consécutifs avant l'arrêt
+
 learningRateScheduler:
   enabled: true
   factor: 0.5
   patience: 2
   min_lr: 1e-5
   monitor: "val_loss"
+
+input: "data/output/train_ready_data.pkl"model:
+
+
