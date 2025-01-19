@@ -535,11 +535,14 @@ stages:
     cmd: python scripts/transform_glove_train_val_test.py
     deps:
     - path: data/output/vectors/glove_vectors.pkl
-      md5: 6503abf08bea8a64b5bdfad12a3ebd9f
+      hash: md5
+      md5: 0167eb7e462fbd50095e6a2b62b4f0d9
       size: 98727191
+      isexec: true
     - path: scripts/transform_glove_train_val_test.py
       md5: 563285bad298065197345d659c7e8b07
       size: 4056
+      isexec: true
     outs:
     - path: data/output/partitions/trainvaltest/glove_vectors/test.pkl
       md5: 1fbb76de63924822d0f5d186b9bdafab
@@ -630,8 +633,8 @@ stages:
       isexec: true
     - path: scripts/test_logistic_tfidf.py
       hash: md5
-      md5: 37e388e2c213456d8b56399887393dfb
-      size: 5413
+      md5: 593cccad24f9278f3b764ef59ff6ae2e
+      size: 6684
       isexec: true
     outs:
     - path: data/output/experiments/logistic_tfidf/metrics/
@@ -639,3 +642,110 @@ stages:
       md5: b5e8f993548c2da0d32f21fcab7c8fbb.dir
       size: 208
       nfiles: 1
+  test_lstm_bidirectional_with_glove:
+    cmd: python scripts/test_lstm_bidirectional_with_glove.py
+    deps:
+    - path: data/output/experiments/lstm_with_glove/model/mlflow_id.json
+      hash: md5
+      md5: 34b3b2c87b6b5d280ff32351c4e00bd2
+      size: 48
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_vectors/test.pkl
+      hash: md5
+      md5: 1fbb76de63924822d0f5d186b9bdafab
+      size: 127658005
+      isexec: true
+    - path: scripts/test_lstm_bidirectional_with_glove.py
+      hash: md5
+      md5: a7c083f4067370d589af1fd4dd7165bb
+      size: 5788
+      isexec: true
+    outs:
+    - path: data/output/experiments/lstm_with_glove/metrics/test_metrics.json
+      hash: md5
+      md5: 0fed01e61b9f28fd460be5bdc61744ad
+      size: 208
+      isexec: true
+  split_data_train_val_test:
+    cmd: python scripts/split_data_train_val_test.py
+    deps:
+    - path: data/output/preprocessed/glove_cleaned/training.csv
+      hash: md5
+      md5: 627e91d1382ba03feef9f85bf4fe8b3b
+      size: 67569118
+      isexec: true
+    - path: scripts/split_data_train_val_test.py
+      hash: md5
+      md5: a4365d4f814916737367d8d04029948f
+      size: 4530
+      isexec: true
+    params:
+      params.yaml:
+        split_data_train_val_test.label_column: id
+        split_data_train_val_test.random_state: 42
+        split_data_train_val_test.test_size: 0.2
+        split_data_train_val_test.text_column: tweet
+        split_data_train_val_test.val_size: 0.1
+    outs:
+    - path: data/output/partitions/trainvaltest/glove_cleaned/
+      hash: md5
+      md5: e4922eb1a102b9a47c236157c9284cfc.dir
+      size: 67569136
+      nfiles: 3
+  preprocess_token_bert:
+    cmd: python scripts/preprocess_token_bert.py
+    deps:
+    - path: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+      hash: md5
+      md5: adc803aa019af0473cccaf05be149f67
+      size: 13501423
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+      hash: md5
+      md5: eedae3afaa47ad278d80c5d417bc22fa
+      size: 47303280
+      isexec: true
+    - path: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+      hash: md5
+      md5: 9c018b22c4015907fbbbaabfc94b0a8f
+      size: 6764433
+      isexec: true
+    - path: scripts/preprocess_token_bert.py
+      hash: md5
+      md5: 0721f440aa3fc9d443cf86840b4ffe9d
+      size: 2532
+      isexec: true
+    params:
+      params.yaml:
+        preprocess_token_bert.model_params.max_length: 128
+    outs:
+    - path: data/output/partitions/trainvaltest/token_bert/test.json
+      hash: md5
+      md5: ba9dde81d2f8af336d9c9457fed50ea1
+      size: 104988973
+      isexec: true
+    - path: data/output/partitions/trainvaltest/token_bert/train.json
+      hash: md5
+      md5: 59f41914f9b87758ba3dd4500f07bf28
+      size: 474187652
+      isexec: true
+    - path: data/output/partitions/trainvaltest/token_bert/val.json
+      hash: md5
+      md5: 48392129d6dae165e271520b917ad9b0
+      size: 59165869
+      isexec: true
+    - path: data/output/token_bert/tokenizer/special_tokens_map.json
+      hash: md5
+      md5: 29ba428df177361130afa82cf0883098
+      size: 125
+      isexec: true
+    - path: data/output/token_bert/tokenizer/tokenizer_config.json
+      hash: md5
+      md5: fbca9bba27fe0af82acfc03fe4aca6c2
+      size: 1248
+      isexec: true
+    - path: data/output/token_bert/tokenizer/vocab.txt
+      hash: md5
+      md5: 64800d5d8528ce344256daf115d4965e
+      size: 231508
+      isexec: true

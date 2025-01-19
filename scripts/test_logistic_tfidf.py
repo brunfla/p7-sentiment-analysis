@@ -74,6 +74,14 @@ def compute_metrics(y_test, y_pred, y_proba, metrics_cfg):
         metrics["pr_auc"] = average_precision_score(y_test, y_proba)
     return metrics
 
+def log_metrics_to_mlflow(metrics):
+    """
+    Logger les métriques dans MLflow.
+    """
+    logger.info("Enregistrement des métriques dans MLflow...")
+    for key, value in metrics.items():
+        mlflow.log_metric(key, value)
+
 def save_metrics(output_file, metrics):
     """
     Sauvegarder les métriques dans un fichier JSON.
@@ -83,7 +91,30 @@ def save_metrics(output_file, metrics):
         json.dump(metrics, f, indent=4)
     logger.info(f"Métriques sauvegardées dans : {output_file}")
 
-def evaluate_model(model, test_data_path, label_file, output_file, threshold, metrics_cfg):
+def plot_metrics(metrics, output_dir):
+    """
+    Générer des plots pour les métriques et les sauvegarder.
+    """
+    import matplotlib.pyplot as plt
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Exemple de plot: Accuracy, Precision, Recall et F1-Score
+    metric_keys = ["accuracy", "precision", "recall", "f1"]
+    metric_values = [metrics[key] for key in metric_keys if key in metrics]
+
+    plt.figure(figsize=(8, 6))
+    plt.bar(metric_keys, metric_values, color="skyblue")
+    plt.title("Performance Metrics")
+    plt.ylabel("Score")
+    plt.ylim(0, 1)
+
+    plot_path = os.path.join(output_dir, "metrics_plot.png")
+    plt.savefig(plot_path)
+    logger.info(f"Plot des métriques sauvegardé dans : {plot_path}")
+    plt.close()
+
+def evaluate_model(model, test_data_path, label_file, output_file, plot_dir, threshold, metrics_cfg):
     """
     Évaluer le modèle sur les données de test.
     """
@@ -118,8 +149,14 @@ def evaluate_model(model, test_data_path, label_file, output_file, threshold, me
         logger.error(f"Erreur lors du calcul des métriques : {e}")
         raise
 
+    # Logger les métriques dans MLflow
+    log_metrics_to_mlflow(metrics)
+
     # Sauvegarder les métriques
     save_metrics(output_file, metrics)
+
+    # Générer et sauvegarder des plots
+    plot_metrics(metrics, plot_dir)
 
 def main():
     # Charger les paramètres
@@ -148,14 +185,16 @@ def main():
 
     # Évaluer le modèle
     try:
-        evaluate_model(
-            model=model,
-            test_data_path=params["input_file"],
-            label_file=params["label_file"],
-            output_file=params["output_file"],
-            threshold=params.get("threshold", 0.5),
-            metrics_cfg=params.get("metrics", ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc"]),
-        )
+        with mlflow.start_run(run_id=model_run_id):
+            evaluate_model(
+                model=model,
+                test_data_path=params["input_file"],
+                label_file=params["label_file"],
+                output_file=params["output_file"],
+                plot_dir=params["plot_dir"],
+                threshold=params.get("threshold", 0.5),
+                metrics_cfg=params.get("metrics", ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc"]),
+            )
     except Exception as e:
         logger.error(f"Erreur lors de l'évaluation du modèle : {e}")
         sys.exit(1)

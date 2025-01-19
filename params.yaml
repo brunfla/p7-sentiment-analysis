@@ -25,6 +25,16 @@ split_data_train_test:
   test_size: 0.3
   random_state: 42
 
+# Découpage des données
+split_data_train_val_test:
+  input_file: data/output/preprocessed/glove_cleaned/training.csv
+  output_dir: data/output/partitions/trainvaltest/glove_cleaned
+  text_column: tweet
+  label_column: id
+  test_size: 0.2
+  val_size: 0.1
+  random_state: 42
+
 # Vectorisation
 generate_vectorizer_tfidf:
   input_file: data/output/partitions/traintest/glove_cleaned/train.csv
@@ -67,6 +77,7 @@ test_logistic_tfidf:
   label_file: data/output/partitions/traintest/labels/test_labels.csv
   model_run_id_file: data/output/experiments/logistic_tfidf/model/mlflow_id.json
   output_file: data/output/experiments/logistic_tfidf/metrics/metrics.json
+  plot_dir: data/output/experiments/logistic_tfidf/plots  # Nouveau répertoire pour les plots
   threshold: 0.5
   mlflow:
     trackingUri: "http://mlflow.local"
@@ -99,108 +110,18 @@ transform_glove_train_val_test:
   random_state: 42
   max_length: 100
 
-
-train_logistic_tfidf_glove:
-  input_file: data/output/partitions/traintest/tfidf_glove/train.csv
-  output_dir: data/output/experiments/logistic_tfidf_glove/model
-  model_type: logistic_regression
-  tuning:
-    type: grid_search
-    cv: 5
-    verbosityLevel: 2
-    parallelJobs: -1
-    paramGrid:
-      penalty: ["l1", "l2"]
-      C: [0.1, 1, 10]
-      solver: ["liblinear"]
-  mlflow:
-    trackingUri: "http://mlflow.local"
-    experiment:
-      name: "sentiment-analysis"
-      run:
-        name: "logistic_regression_tfidf_glove"
-        description: "Training Logistic Regression with TF-IDF / Glove"
-        tags:
-          modelType: "logistic_regression"
-          datasetVersion: "v1.0"
-
-
-test_logistic_tfidf_glove:
-  input_file: data/output/partitions/traintest/tfidf_glove/test.csv
-  model_run_id_file: data/output/experiments/logistic_tfidf_glove/model/mlflow_id.json
-  output_file: data/output/experiments/logistic_tfidf_glove/metrics/metrics.json
-  threshold: 0.5
-  metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-    - roc_auc
-    - pr_auc
-
 train_lstm_bidirectional_with_glove:
-  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
-  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
-  glove_vectors_file: data/output/vectors/glove_vectors.pkl              # Fichier contenant les vecteurs GloVe générés
-  output_dir: data/output/experiments/lstm_with_glove/model
+  input_train_file: data/output/partitions/trainvaltest/glove_vectors/train.pkl
+  input_val_file: data/output/partitions/trainvaltest/glove_vectors/val.pkl
+  glove_vectors_file: data/output/vectors/glove_vectors.pkl
+  output_dir: data/output/experiments/lstm_with_glove
   model_params:
-    max_length: 100                   # Longueur maximale des séquences
-    lstm_units:                       # Nombre de neurones dans les couches LSTM
-      - 128                           # Première couche LSTM
-      - 64                            # Deuxième couche LSTM
-    dropout_rate: 0.3                 # Taux de dropout
-    dense_units: 32                   # Taille de la couche dense
-    batch_size: 32                    # Taille des batchs
-    epochs: 20                        # Nombre d'époques
-  training_params:
-    earlyStopping:                    # Paramètres pour le callback EarlyStopping
-      enabled: true                   # Activer/désactiver EarlyStopping
-      monitor: val_loss               # Métrique surveillée
-      patience: 3                     # Patience avant arrêt
-      mode: min                       # Mode pour la surveillance (minimisation de la perte)
-    learningRateScheduler:            # Paramètres pour le scheduler de taux d'apprentissage
-      enabled: true                   # Activer/désactiver le scheduler
-      monitor: val_loss               # Métrique surveillée
-      factor: 0.5                     # Facteur de réduction du taux d'apprentissage
-      patience: 2                     # Patience avant réduction
-      min_lr: 1e-5                    # Taux d'apprentissage minimal
-    thresholdStop:                    # Paramètres pour StopIfBelowThreshold
-      enabled: true                   # Activer/désactiver le callback
-      threshold: 0.6                  # Seuil minimal de la métrique
-      metric: accuracy                # Métrique surveillée
-      patience_batches: 10            # Nombre de batches consécutifs autorisés sous le seuil
-  mlflow:                             # Configuration de MLflow
-    trackingUri: http://mlflow.local  # URI de suivi pour MLflow
-    experiment:
-      name: sentiment-analysis        # Nom de l'expérience MLflow
-      run:
-        name: lstm_bidirectional_with_glove  # Nom du run
-        description: Training with bidirectional LSTM and GloVe embeddings
-        tags:                         # Tags pour le suivi MLflow
-          model: lstm_bidirectional
-          dataset: glove_cleaned
-
-test_lstm_bidirectional_with_glove:
-  input_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
-  model_run_id_file: data/output/experiments/lstm_with_glove/model/mlflow_id.json
-  output_file: data/output/experiments/lstm_with_glove/metrics/metrics.json
-  threshold: 0.5
-  metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-    - roc_auc
-    - pr_auc
-
-train_bert_with_glove:
-  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
-  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
-  output_dir: data/output/experiments/bert_with_glove/model
-  model_params:
-    max_length: 128
+    max_length: 100
+    lstm_units: [128, 64]
+    dropout_rate: 0.3
+    dense_units: 32
     batch_size: 32
-    epochs: 10
+    epochs: 20
   training_params:
     earlyStopping:
       enabled: true
@@ -209,20 +130,91 @@ train_bert_with_glove:
       mode: min
     learningRateScheduler:
       enabled: true
-      factor: 5e-5  # Taux d'apprentissage initial
-      warmup_ratio: 0.1  # Ratio de warmup
+      monitor: val_loss
+      factor: 0.5
+      patience: 2
+      min_lr: 1e-5
+    thresholdStop:
+      enabled: false  # Désactiver si pas implémenté dans le script
+      threshold: 0.6
+      metric: accuracy
+      patience_batches: 10
+  glove_params:
+    embedding_dim: 200
+    trainable: false
   mlflow:
     trackingUri: http://mlflow.local
     experiment:
       name: sentiment-analysis
       run:
-        name: bert_with_glove
-        description: Training DistilBERT with GloVe embeddings
+        name: lstm_bidirectional_with_glove
+        description: Training with bidirectional LSTM and GloVe embeddings
+        tags:
+          model: lstm_bidirectional
+          dataset: glove_cleaned
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+  data_params:
+    padding: post
+    truncating: post
+
+test_lstm_bidirectional_with_glove:
+  input_file: data/output/partitions/trainvaltest/glove_vectors/test.pkl
+  output_dir: data/output/experiments/lstm_with_glove
+  threshold: 0.5
+  mlflow:
+    trackingUri: "http://mlflow.local"
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
+
+preprocess_token_bert:
+  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
+  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
+  input_test_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
+  output_dir: data/output/partitions/trainvaltest/token_bert  # Répertoire unique pour les sorties
+  tokenizer_output: data/output/token_bert/tokenizer  # Emplacement du tokenizer
+  model_params:
+    max_length: 128  # Longueur maximale pour la tokenisation
+
+train_distilbert:
+  input_train_token: data/output/partitions/trainvaltest/token_bert/train.json
+  input_val_token: data/output/partitions/trainvaltest/token_bert/val.json
+  tokenizer_path: data/output/token_bert/tokenizer
+  output_dir: data/output/experiments/distilbert
+  model_params:
+    max_length: 128  # Doit correspondre à celui utilisé dans preprocess_token_bert
+    batch_size: 32  # Réduire à 16 si problèmes mémoire
+    epochs: 10  # Early stopping interrompt si besoin
+  training_params:
+    earlyStopping:
+      enabled: true
+      monitor: val_loss
+      patience: 3
+      mode: min
+    learningRateScheduler:
+      enabled: true
+      factor: 5e-5  # Ajuster entre 3e-5 et 1e-4 si nécessaire
+      warmup_ratio: 0.1
+  mlflow:
+    trackingUri: http://mlflow.local
+    experiment:
+      name: sentiment-analysis
+      run:
+        name: distilbert
+        description: Training DistilBERT
         tags:
           model: distilbert
-          dataset: glove_cleaned
+          dataset: token_bert
 
-test_bert_with_glove:
+test_distilbert:
   input_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
   model_dir: data/output/experiments/bert_with_glove/model
   output_file: data/output/experiments/bert_with_glove/metrics/metrics.json
