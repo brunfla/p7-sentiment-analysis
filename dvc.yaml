@@ -3,49 +3,19 @@ plots:
   - data/output/experiments/distilbert/plots/metrics_plot.png
   
 stages:
-# Nettoyage initial des données (suppression des caractères inutiles, gestion des valeurs manquantes, etc.).
-  preprocess_base_cleaning:
-    cmd: python scripts/preprocess_base_cleaning.py
-    deps:
-      - data/input/training.1600000.processed.noemoticon.utf-8.csv
-      - scripts/preprocess_base_cleaning.py
-    outs:
-      - data/output/preprocessed/cleaned/training.csv
-
-# Préparer les données pour une compatibilité avec les vecteurs GloVe.
-  preprocess_glove_cleaning:
-    cmd: python scripts/preprocess_glove_cleaning.py
-    deps:
-      - data/output/preprocessed/cleaned/training.csv
-      - data/input/glove.twitter.27B.100d.txt
-      - scripts/preprocess_glove_cleaning.py
-    outs:
-      - data/output/preprocessed/glove_cleaned/training.csv
-    params:
-      - preprocess_glove_cleaning.glove_similarity_threshold
-
-# Diviser les données en ensembles d'entraînement, validation et test.
-  split_data_train_test:
-    cmd: python scripts/split_data_train_test.py
-    deps:
-      - data/output/preprocessed/glove_cleaned/training.csv
-      - scripts/split_data_train_test.py
-    outs:
-      - data/output/partitions/traintest/glove_cleaned/
-    params:
-      - split_data_train_test.text_column
-      - split_data_train_test.label_column
-      - split_data_train_test.test_size
-      - split_data_train_test.random_state
-
 # Diviser les données en ensembles d'entraînement, validation et test.
   split_data_train_val_test:
-    cmd: python scripts/split_data_train_val_test.py
+    cmd: python src/data_preparation/split_data_train_val_test.py
     deps:
-      - data/output/preprocessed/glove_cleaned/training.csv
-      - scripts/split_data_train_val_test.py
+      - data/input/training.1600000.processed.noemoticon.utf-8.csv
+      - src/data_preparation/split_data_train_val_test.py
     outs:
-      - data/output/partitions/trainvaltest/glove_cleaned/
+      - data/output/preprocessed/train_val_test/x_train.csv
+      - data/output/preprocessed/train_val_test/y_train.csv
+      - data/output/preprocessed/train_val_test/x_val.csv
+      - data/output/preprocessed/train_val_test/y_val.csv
+      - data/output/preprocessed/train_val_test/x_test.csv
+      - data/output/preprocessed/train_val_test/y_test.csv
     params:
       - split_data_train_val_test.text_column
       - split_data_train_val_test.label_column
@@ -53,169 +23,131 @@ stages:
       - split_data_train_val_test.val_size
       - split_data_train_val_test.random_state
 
-  generate_vectorizer_tfidf:
-    cmd: python scripts/generate_vectorizer_tfidf.py
+  plot_data_stats_train_val_test:
+    cmd: python src/data_preparation/plot_data_stats.py plot_data_stats_train_val_test
     deps:
-      - data/output/partitions/traintest/glove_cleaned/train.csv
-      - scripts/generate_vectorizer_tfidf.py
-    outs:
-      - data/output/vectorizers/tfidf_train.pkl
-    params:
-      - generate_vectorizer_tfidf.max_features
-      - generate_vectorizer_tfidf.text_column
+      - data/output/preprocessed/train_val_test/x_train.csv
+      - data/output/preprocessed/train_val_test/x_val.csv
+      - data/output/preprocessed/train_val_test/x_test.csv
 
-  transform_tfidf_train_test:
-    cmd: python scripts/transform_tfidf_train_test.py
+  # Nettoyage initial des données (suppression des caractères inutiles, gestion des valeurs manquantes, etc.).
+  clean_tweet_base:
+    cmd: python src/data_preparation/clean_tweet_base.py
     deps:
-      - data/output/partitions/traintest/glove_cleaned/
-      - data/output/vectorizers/tfidf_train.pkl
-      - scripts/transform_tfidf_train_test.py
+      - data/output/preprocessed/train_val_test/x_train.csv
+      - data/output/preprocessed/train_val_test/x_val.csv
+      - data/output/preprocessed/train_val_test/x_test.csv
+      - data/output/preprocessed/train_val_test/y_train.csv
+      - data/output/preprocessed/train_val_test/y_val.csv
+      - data/output/preprocessed/train_val_test/y_test.csv
+      - src/data_preparation/clean_tweet_base.py
     outs:
-      - data/output/partitions/traintest/tfidf_vectors/
-      - data/output/partitions/traintest/labels/
+      - data/output/preprocessed/clean_tweet_base/x_train.csv
+      - data/output/preprocessed/clean_tweet_base/x_val.csv
+      - data/output/preprocessed/clean_tweet_base/x_test.csv
+      - data/output/preprocessed/clean_tweet_base/y_train.csv
+      - data/output/preprocessed/clean_tweet_base/y_val.csv
+      - data/output/preprocessed/clean_tweet_base/y_test.csv
+
+# Préparer les données pour une compatibilité avec les vecteurs GloVe.
+  clean_tweet_glove:
+    cmd: python src/data_preparation/clean_tweet_glove.py
+    deps:
+      - data/output/preprocessed/clean_tweet_base/x_train.csv
+      - data/output/preprocessed/clean_tweet_base/x_val.csv
+      - data/output/preprocessed/clean_tweet_base/x_test.csv
+      - data/output/preprocessed/clean_tweet_base/y_train.csv
+      - data/output/preprocessed/clean_tweet_base/y_val.csv
+      - data/output/preprocessed/clean_tweet_base/y_test.csv
+      - data/input/glove.twitter.27B.50d.txt
+      - src/data_preparation/clean_tweet_glove.py
+    outs:
+      - data/output/preprocessed/clean_tweet_glove/x_train.csv
+      - data/output/preprocessed/clean_tweet_glove/x_val.csv
+      - data/output/preprocessed/clean_tweet_glove/x_test.csv
+      - data/output/preprocessed/clean_tweet_glove/y_train.csv
+      - data/output/preprocessed/clean_tweet_glove/y_val.csv
+      - data/output/preprocessed/clean_tweet_glove/y_test.csv
     params:
-      - transform_tfidf_train_test.text_column
-      - transform_tfidf_train_test.label_column
+    - clean_tweet_glove.glove_similarity_threshold
+
+  plot_data_stats_clean_tweet_glove:
+    cmd: python src/data_preparation/plot_data_stats.py plot_data_stats_clean_tweet_glove
+    deps:
+      - data/output/preprocessed/clean_tweet_glove/x_train.csv
+      - data/output/preprocessed/clean_tweet_glove/x_val.csv
+      - data/output/preprocessed/clean_tweet_glove/x_test.csv
+
+  batch_prepare_tfidf_vectors:
+    cmd: python src/data_preparation/batch_prepare_tfidf_vectors.py
+    deps:
+    - data/output/preprocessed/clean_tweet_glove/x_train.csv
+    - data/output/preprocessed/clean_tweet_glove/x_val.csv
+    - data/output/preprocessed/clean_tweet_glove/x_test.csv
+    - src/data_preparation/batch_prepare_tfidf_vectors.py
+    outs:
+    - data/output/preprocessed/tfidf_vectorizer/x_train_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/x_val_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/x_test_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/y_train.csv
+    - data/output/preprocessed/tfidf_vectorizer/y_val.csv
+    - data/output/preprocessed/tfidf_vectorizer/y_test.csv
+    params:
+    - batch_apply_tfidf_vectorizer.max_length
 
   train_logistic_tfidf:
-    cmd: python scripts/train_logistic_tfidf.py
+    cmd: python src/train_model/train_logistic_tfidf.py
     deps:
-      - data/output/partitions/traintest/tfidf_vectors/train.npz
-      - data/output/partitions/traintest/labels/train_labels.csv
-      - scripts/train_logistic_tfidf.py
+    - data/output/preprocessed/tfidf_vectorizer/x_train_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/x_val_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/y_train.csv
+    - data/output/preprocessed/tfidf_vectorizer/y_val.csv
+    - src/train_model/train_logistic_tfidf.py
     outs:
-      - data/output/experiments/logistic_tfidf/model/mlflow_id.json
-      - data/output/experiments/logistic_tfidf/model/model.pkl
+    - data/output/trained_models/logistic_sgd/mlflow_id.json
+    - data/output/trained_models/logistic_sgd/model.pkl
 
-  test_logistic_tfidf:
-    cmd: python scripts/test_logistic_tfidf.py
+  test_model_logistic:
+    cmd: python src/test_model/test_model_logistic.py
     deps:
-      - data/output/partitions/traintest/tfidf_vectors/test.npz
-      - data/output/partitions/traintest/labels/test_labels.csv
-      - data/output/experiments/logistic_tfidf/model  # Utilise le modèle généré par l'étape précédente
-      - scripts/test_logistic_tfidf.py
-    outs:
-      - data/output/experiments/logistic_tfidf/metrics/  # Répertoire distinct pour les métriques
+    - data/output/preprocessed/tfidf_vectorizer/x_test_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/y_test.csv
+    - src/test_model/test_model_logistic.py  
 
+#  batch_prepare_glove_vectors:
+#    cmd: python src/data_preparation/batch_prepare_glove_vectors.py
+#    deps:
+#      - data/output/partitions/train_val_test/train.csv
+#      - data/output/partitions/train_val_test/val.csv
+#      - data/output/partitions/train_val_test/test.csv
+#      - data/input/glove.twitter.27B.50d.txt
+#      - src/data_preparation/batch_prepare_glove_vectors.py
+#      - src/data_preparation/glove_loader.py
+#    outs:
+#      - data/output/preprocessed/glove_vectors/
+#    params:
+#      - batch_prepare_glove_vectors.model_params.max_length
+#      - batch_prepare_glove_vectors.input.train_file
+#      - batch_prepare_glove_vectors.input.val_file
+#      - batch_prepare_glove_vectors.input.test_file
+#      - batch_prepare_glove_vectors.output_dir
 
-  # Transformation en vecteurs GloVe et découpage en train/test
-  #transform_glove_train_test:
-  #  cmd: python scripts/transform_glove_train_test.py
-  #  deps:
-  #  - data/output/vectors/glove_vectors.pkl # Matrice d'embedding et tokenizer GloVe
-  #  - scripts/transform_glove_train_test.py # Script pour appliquer GloVe et diviser en train/test
-  #  outs:
-  #  - data/output/partitions/traintest/glove_vectors/train.pkl # Vecteurs d'entraînement (format binaire)
-  #  - data/output/partitions/traintest/glove_vectors/test.pkl  # Vecteurs de test (format binaire)
-
-
-  generate_glove_embedding_matrix:
-    cmd: python scripts/generate_glove_embedding_matrix.py
+  
+  train_model_distilbert_ktrain:
+    cmd: python src/train_model/train_model_distilbert_ktrain.py
     deps:
-      - data/output/preprocessed/glove_cleaned/training.csv
-      - data/input/glove.twitter.27B.100d.txt
-      - scripts/generate_glove_embedding_matrix.py
+    - data/output/preprocessed/clean_tweet_glove/x_train.csv
+    - data/output/preprocessed/clean_tweet_glove/y_train.csv
+    - data/output/preprocessed/clean_tweet_glove/x_val.csv
+    - data/output/preprocessed/clean_tweet_glove/y_val.csv
+    - src/train_model/train_model_distilbert_ktrain.py
     outs:
-      - data/output/vectors/glove_vectors.pkl
-    params:
-      - generate_glove_embedding_matrix.vocab_size
-      - generate_glove_embedding_matrix.embedding_dim
+    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json        # Fichier contenant le Run ID MLflow
 
-  transform_glove_train_val_test:
-    cmd: python scripts/transform_glove_train_val_test.py
+  test_model_distilbert_ktrain:
+    cmd:  python src/test_model/test_model_distilbert_ktrain.py
     deps:
-    - data/output/vectors/glove_vectors.pkl # Matrice d'embedding et tokenizer GloVe
-    - scripts/transform_glove_train_val_test.py # Script pour appliquer GloVe et diviser en train/val/test
-    outs:
-    - data/output/partitions/trainvaltest/glove_vectors/train.pkl # Vecteurs d'entraînement (format binaire)
-    - data/output/partitions/trainvaltest/glove_vectors/val.pkl   # Vecteurs de validation (format binaire)
-    - data/output/partitions/trainvaltest/glove_vectors/test.pkl  # Vecteurs de test (format binaire)
-
-  train_lstm_bidirectional_with_glove:
-    cmd: python scripts/train_lstm_bidirectional_with_glove.py
-    deps:
-    - data/output/partitions/trainvaltest/glove_vectors/train.pkl
-    - data/output/partitions/trainvaltest/glove_vectors/val.pkl
-    - data/output/vectors/glove_vectors.pkl  # Fichier contenant les vecteurs prétraités
-    - scripts/train_lstm_bidirectional_with_glove.py
-    outs:
-    - data/output/experiments/lstm_with_glove/model/mlflow_id.json
-    - data/output/experiments/lstm_with_glove/model/model.h5
-
-  test_lstm_bidirectional_with_glove:
-    cmd: python scripts/test_lstm_bidirectional_with_glove.py
-    deps:
-    - data/output/partitions/trainvaltest/glove_vectors/test.pkl
-    - data/output/experiments/lstm_with_glove/model/mlflow_id.json
-    - scripts/test_lstm_bidirectional_with_glove.py
-    outs:
-    - data/output/experiments/lstm_with_glove/metrics/test_metrics.json
-
-  preprocess_token_bert:
-    cmd: python scripts/preprocess_token_bert.py
-    deps:
-      - data/output/partitions/trainvaltest/glove_cleaned/train.csv
-      - data/output/partitions/trainvaltest/glove_cleaned/val.csv
-      - data/output/partitions/trainvaltest/glove_cleaned/test.csv  # Ajout des tests
-      - scripts/preprocess_token_bert.py
-    outs:
-      - data/output/partitions/trainvaltest/token_bert/train.json
-      - data/output/partitions/trainvaltest/token_bert/val.json
-      - data/output/partitions/trainvaltest/token_bert/test.json  # Sortie des tests tokenisés
-      - data/output/token_bert/tokenizer/tokenizer_config.json
-      - data/output/token_bert/tokenizer/special_tokens_map.json
-      - data/output/token_bert/tokenizer/vocab.txt
-    params:
-      - preprocess_token_bert.model_params.max_length
-
-  train_distilbert:
-    cmd: python scripts/train_distilbert.py
-    deps:
-    - data/output/partitions/trainvaltest/token_bert/train.json  # Données tokenisées pour l'entraînement
-    - data/output/partitions/trainvaltest/token_bert/val.json    # Données tokenisées pour la validation
-    - data/output/token_bert/tokenizer/                         # Tokenizer sauvegardé
-    - scripts/train_distilbert.py
-    outs:
-    - data/output/experiments/distilbert/model/mlflow_id.json  # Fichier contenant le Run ID MLflow
-    - data/output/experiments/distilbert/model/model.keras     # Modèle entraîné au format Keras
-
-  test_distilbert:
-    cmd: python scripts/test_distilbert.py
-    deps:
-    - data/output/experiments/distilbert/model/mlflow_id.json  # Fichier contenant le Run ID MLflow
-    - data/output/partitions/trainvaltest/token_bert/test.json
-    - data/output/token_bert/tokenizer/
-    - scripts/test_distilbert.py
-    outs:
-    - data/output/experiments/distilbert/metrics/test_metrics.json
-
-  compare_models:
-    cmd: python scripts/compare_models.py
-    deps:
-    - data/output/experiments/logistic_tfidf/model/mlflow_id.json
-    - data/output/experiments/distilbert/model/mlflow_id.json
-    - data/output/experiments/lstm_with_glove/model/mlflow_id.json
-    outs:
-    - data/output/experiments/compare_models.json
-
-  deploy_api:
-    cmd: python scripts/deploy_api.py
-    deps:
-      - data/output/experiments/compare_models.json
-      - data/output/experiments/distilbert/model/model.keras
-      - data/output/token_bert/tokenizer/
-      - data/input/glove.twitter.27B.100d.txt
-      - scripts/deploy_api.py
-    outs:
-      - data/output/api/deployment/
-
-  monitor_api:
-    cmd: python scripts/monitor_api.py
-    deps:
-      - data/output/api/deployment/
-      - scripts/monitor_api.py
-    outs:
-      - data/output/monitoring/api_logs/
-      - data/output/monitoring/alerts.json
-
-
+    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json
+    - data/output/preprocessed/clean_tweet_glove/x_test.csv
+    - data/output/preprocessed/clean_tweet_glove/y_test.csv
+    - src/test_model/test_model_distilbert_ktrain.py

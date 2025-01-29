@@ -1,4 +1,0 @@
-type: "optuna"
-trialCount: 20
-timeLimitSeconds: 600
-optimizationDirection: "maximize"

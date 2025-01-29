@@ -1,5 +1,0 @@
-_target_: "trainTest"
-testSize: 0.2
-randomSeed: 42
-input: "./data/output/clean_data.csv"
-output: "./data/output/split_data.pkl"

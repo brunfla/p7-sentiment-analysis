@@ -1,6 +1,0 @@
-_target_: "logisticRegression"
-type: "logistic_regression"
-parameters:
-  solver: "liblinear"
-  penalty: "l2"
-  C: 1.0

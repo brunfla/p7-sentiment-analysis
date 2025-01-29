@@ -1,9 +1,0 @@
-_target_: "gloveVectorizer"
-type: "gloveVectorizer"
-_version_: "1.0.0"
-embeddingFile: "data/input/glove.6B.50d.txt"  # Chemin vers le fichier des embeddings GloVe
-embeddingSize: 50  # Taille des vecteurs GloVe (par exemple 50, 100, 200, 300)
-vocabularySize: 10000  # Nombre de mots à prendre en compte
-maxLength: 100  # Nombre maximal de mots par document (padding ou tronquage)
-outputPath: "data/output/glove_vectorizer.pkl"  # Où sauvegarder le vectoriseur
-outputData: "data/output/train_ready_data_glove.pkl"  # Où sauvegarder les données transformées

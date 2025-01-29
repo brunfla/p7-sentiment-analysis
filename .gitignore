@@ -6,7 +6,8 @@ scripts/mlarifacts/
 scripts/*id*.json
 *.onnx
 *.csv
-
+.vscode/
+*.backup
 # Fichiers cachés et temporaires
 __pycache__/
 *.pyc
@@ -19,11 +20,14 @@ tests/
 docs/
 mlruns/ 
 outputs/
+_old_
 
 # DVC
 # Ignorer toutes les données dans 'data/'
 data/input/*
 data/output/*
+dvc_plots
+
 
 # Mais ne pas ignorer les fichiers .dvc générés
 !data/input/*.dvc

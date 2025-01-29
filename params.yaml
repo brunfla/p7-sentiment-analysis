@@ -1,65 +1,87 @@
 # Prétraitement
-preprocess_base_cleaning:
-  input_file: data/input/training.1600000.processed.noemoticon.utf-8.csv
-  output_file: data/output/preprocessed/cleaned/training.csv
-
-preprocess_glove_cleaning:
-  input_file: data/output/preprocessed/cleaned/training.csv
-  glove_file: data/input/glove.twitter.27B.100d.txt
-  output_file: data/output/preprocessed/glove_cleaned/training.csv
-  glove_similarity_threshold: 0.6
-
-generate_glove_embedding_matrix:
-  input_file: data/output/preprocessed/glove_cleaned/training.csv
-  glove_file: data/input/glove.twitter.27B.100d.txt
-  output_file: data/output/vectors/glove_vectors.pkl
-  vocab_size: 20000
-  embedding_dim: 100    
-
-# Découpage des données
-split_data_train_test:
-  input_file: data/output/preprocessed/glove_cleaned/training.csv
-  output_dir: data/output/partitions/traintest/glove_cleaned
-  text_column: tweet
-  label_column: id
-  test_size: 0.3
-  random_state: 42
 
 # Découpage des données
 split_data_train_val_test:
-  input_file: data/output/preprocessed/glove_cleaned/training.csv
-  output_dir: data/output/partitions/trainvaltest/glove_cleaned
+  input_file: data/input/training.1600000.processed.noemoticon.utf-8.csv
+  output_dir: data/output/preprocessed/train_val_test/
   text_column: tweet
   label_column: id
-  test_size: 0.2
-  val_size: 0.1
+  id_column: timestamp
+  test_size: 0.005
+  val_size: 0.07
   random_state: 42
 
-# Vectorisation
-generate_vectorizer_tfidf:
-  input_file: data/output/partitions/traintest/glove_cleaned/train.csv
-  output_file: data/output/vectorizers/tfidf_train.pkl
-  max_features: 1000
-  text_column: tweet
+plot_data_stats_train_val_test:
+  input_dir: data/output/preprocessed/train_val_test
+  input_files:
+  - "x_train.csv"
+  - "x_val.csv"
+  - "x_test.csv"  
+  output_dir: data/output/preprocessed/train_val_test/plots
+
+clean_tweet_base:
+  input_dir: data/output/preprocessed/train_val_test
+  input_files:
+  - "x_train.csv"
+  - "x_val.csv"
+  - "x_test.csv"
+  output_dir: data/output/preprocessed/clean_tweet_base
+
+clean_tweet_glove:
+  input_dir: data/output/preprocessed/clean_tweet_base/ 
+  input_files:
+  - "x_train.csv"
+  - "x_val.csv"
+  - "x_test.csv"
+  output_dir: data/output/preprocessed/clean_tweet_glove/
+  glove_file: data/input/glove.twitter.27B.50d.txt
+  glove_similarity_threshold: 0.8
+
+plot_data_stats_clean_tweet_glove:
+  input_dir: data/output/preprocessed/clean_tweet_glove
+  input_files:
+  - "x_train.csv"
+  - "x_val.csv"
+  - "x_test.csv"  
+  output_dir: data/output/preprocessed/clean_tweet_glove/plots
 
 # Prétraitement avec TF-IDF
-transform_tfidf_train_test:
-  vectorizer_file: data/output/vectorizers/tfidf_train.pkl
-  input_dir: data/output/partitions/traintest/glove_cleaned/
-  output_dir: data/output/partitions/traintest/tfidf_vectors
-  output_labels_dir: data/output/partitions/traintest/labels
-  text_column: tweet
-  label_column: id
+batch_apply_tfidf_vectorizer:
+  input_dir: data/output/preprocessed/clean_tweet_glove
+  input_files:
+  - x_train.csv
+  - x_val.csv
+  - x_test.csv
+  - y_train.csv
+  - y_val.csv
+  - y_test.csv
+  output_dir: data/output/preprocessed/tfidf_vectorizer
+  max_length: 10000
+
+#batch_prepare_glove_vectors:
+#  glove_file: data/input/glove.twitter.27B.50d.txt
+#  input:
+#    train_file: data/output/partitions/train_val_test/train.csv
+#    val_file: data/output/partitions/train_val_test/val.csv
+#    test_file: data/output/partitions/train_val_test/test.csv
+#  output_dir: data/output/preprocessed/glove_vectors
+#  text_column: tweet
+#  label_column: id
+#  model_params:
+#    max_length: 50
 
 # Entraînement des modèles
 train_logistic_tfidf:
-  input_file: data/output/partitions/traintest/tfidf_vectors/train.npz
-  target_file: data/output/partitions/traintest/labels/train_labels.csv
-  output_dir: data/output/experiments/logistic_tfidf/model
-  model_type: logistic_regression
+  input_train_vec: data/output/preprocessed/tfidf_vectorizer/x_train_vec.pkl
+  input_train_labels: data/output/preprocessed/tfidf_vectorizer/y_train.csv
+  input_val_vec: data/output/preprocessed/tfidf_vectorizer/x_val_vec.pkl
+  input_val_labels: data/output/preprocessed/tfidf_vectorizer/y_val.csv
+  output_dir: data/output/trained_models/logistic_sgd
+  model_type: logistic_sgd
   tuning:
     max_iter: 1000
     tol: 0.001
+  chunk_size: 10000
   mlflow:
     trackingUri: "http://mlflow.local"
     experiment:
@@ -67,20 +89,66 @@ train_logistic_tfidf:
       run:
         name: "logistic_regression_tfidf"
         description: "Training Logistic Regression with TF-IDF"
-        min_accuracy: 0.7  # Seuil minimal d'accuracy pour enregistrer le modèle
+        min_accuracy: 0.5  # Seuil minimal d'accuracy pour enregistrer le modèle
         tags:
-          modelType: "logistic_regression"
-          datasetVersion: "v1.0"
+          modelType: "logistic_sgd"
+          dataset: "tfidf_vectorizer"
 
 test_logistic_tfidf:
-  input_file: data/output/partitions/traintest/tfidf_vectors/test.npz
-  label_file: data/output/partitions/traintest/labels/test_labels.csv
-  model_run_id_file: data/output/experiments/logistic_tfidf/model/mlflow_id.json
-  output_file: data/output/experiments/logistic_tfidf/metrics/metrics.json
-  plot_dir: data/output/experiments/logistic_tfidf/plots  # Nouveau répertoire pour les plots
+  input_test_vec: data/output/preprocessed/tfidf_vectorizer/x_test_vec.pkl
+  input_test_labels: data/output/preprocessed/tfidf_vectorizer/y_test.csv
+  model_run_id_file: data/output/trained_models/logistic_sgd/mlflow_id.json
+  output_metrics_json: data/output/trained_models/logistic_sgd/test_metrics.json
+  plot_dir: data/output/trained_models/logistic_sgd/plots  # Nouveau répertoire pour les plots
   threshold: 0.5
   mlflow:
     trackingUri: "http://mlflow.local"
+
+train_distilbert_ktrain:
+  # Modèle pré-entraîné
+  pretrained_model: distilbert-base-uncased
+  # Fichiers de données tokenisées (format .pkl)
+  input_dir: data/output/preprocessed/clean_tweet_glove/
+  input_files:
+  - x_train.csv
+  - y_train.csv 
+  - x_val.csv
+  - y_val.csv 
+  # Répertoire pour les sorties du modèle
+  output_dir: data/output/trained_models/distilbert-base-uncased
+  # Paramètres du modèle
+  model_params:
+    max_length: 25  # Longueur maximale des séquences
+    epochs: 4      # Nombre d'époques d'entraînement
+    batch_size: 32   # Taille du batch
+  # Paramètres d'entraînement
+  training_params:
+    learning_rate: 0.000005  # Taux d'apprentissage
+  # Configuration MLflow pour le suivi des expériences
+  mlflow:
+    trackingUri: http://mlflow.local  # URI du serveur MLflow
+    experiment:
+      name: sentiment-analysis       # Nom de l'expérience
+      run:
+        name: distilbert-base-uncased-ktrain  # Nom du run
+        description: Training distilbert-base-uncased with Ktrain
+        tags:                        # Tags pour le suivi
+          model: distilbert-base-uncased
+          dataset: clean_tweet_glove
+
+test_model_single_tweet:
+  input_dir: data/output/preprocessed/clean_tweet_glove/
+  input_files:
+  - x_test.csv
+  - y_test.csv
+  output_dir: data/output/trained_models/distilbert-base-uncased
+  threshold: 0.5
+  model_run_id_file: data/output/trained_models/distilbert-base-uncased/mlflow_id.json
+  mlflow_tracking_uri: "http://mlflow.local"
+  model_params:
+    max_length: 20  # Doit correspondre à celui utilisé dans preprocess_token_bert
+    batch_size: 160  # Réduire à 16 si problèmes mémoire
+    epochs: 1       # Early stopping interrompt si besoin
   metrics:
     - accuracy
     - precision
@@ -88,143 +156,3 @@ test_logistic_tfidf:
     - f1
     - roc_auc
     - pr_auc
-
-transform_glove_train_test:
-  input_file: data/output/vectors/glove_vectors.pkl
-  data_file: data/output/preprocessed/glove_cleaned/training.csv  # Fichier texte nettoyé
-  output_dir: data/output/partitions/traintest/glove_vectors
-  text_column: tweet
-  label_column: id
-  test_size: 0.3
-  random_state: 42
-  max_length: 100
-
-transform_glove_train_val_test:
-  input_file: data/output/vectors/glove_vectors.pkl  # Fichier contenant la matrice et le tokenizer
-  data_file: data/output/preprocessed/glove_cleaned/training.csv  # Fichier texte nettoyé
-  output_dir: data/output/partitions/trainvaltest/glove_vectors
-  text_column: tweet
-  label_column: id
-  test_size_val: 0.2
-  test_size_test: 0.2
-  random_state: 42
-  max_length: 100
-
-train_lstm_bidirectional_with_glove:
-  input_train_file: data/output/partitions/trainvaltest/glove_vectors/train.pkl
-  input_val_file: data/output/partitions/trainvaltest/glove_vectors/val.pkl
-  glove_vectors_file: data/output/vectors/glove_vectors.pkl
-  output_dir: data/output/experiments/lstm_with_glove
-  model_params:
-    max_length: 100
-    lstm_units: [128, 64]
-    dropout_rate: 0.3
-    dense_units: 32
-    batch_size: 32
-    epochs: 20
-  training_params:
-    earlyStopping:
-      enabled: true
-      monitor: val_loss
-      patience: 3
-      mode: min
-    learningRateScheduler:
-      enabled: true
-      monitor: val_loss
-      factor: 0.5
-      patience: 2
-      min_lr: 1e-5
-    thresholdStop:
-      enabled: false  # Désactiver si pas implémenté dans le script
-      threshold: 0.6
-      metric: accuracy
-      patience_batches: 10
-  glove_params:
-    embedding_dim: 200
-    trainable: false
-  mlflow:
-    trackingUri: http://mlflow.local
-    experiment:
-      name: sentiment-analysis
-      run:
-        name: lstm_bidirectional_with_glove
-        description: Training with bidirectional LSTM and GloVe embeddings
-        tags:
-          model: lstm_bidirectional
-          dataset: glove_cleaned
-  metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-  data_params:
-    padding: post
-    truncating: post
-
-test_lstm_bidirectional_with_glove:
-  input_file: data/output/partitions/trainvaltest/glove_vectors/test.pkl
-  output_dir: data/output/experiments/lstm_with_glove
-  threshold: 0.5
-  mlflow:
-    trackingUri: "http://mlflow.local"
-  metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-    - roc_auc
-    - pr_auc
-
-preprocess_token_bert:
-  input_train_file: data/output/partitions/trainvaltest/glove_cleaned/train.csv
-  input_val_file: data/output/partitions/trainvaltest/glove_cleaned/val.csv
-  input_test_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
-  output_dir: data/output/partitions/trainvaltest/token_bert  # Répertoire unique pour les sorties
-  tokenizer_output: data/output/token_bert/tokenizer  # Emplacement du tokenizer
-  model_params:
-    max_length: 128  # Longueur maximale pour la tokenisation
-
-train_distilbert:
-  input_train_token: data/output/partitions/trainvaltest/token_bert/train.json
-  input_val_token: data/output/partitions/trainvaltest/token_bert/val.json
-  tokenizer_path: data/output/token_bert/tokenizer
-  output_dir: data/output/experiments/distilbert
-  model_params:
-    max_length: 128  # Doit correspondre à celui utilisé dans preprocess_token_bert
-    batch_size: 32  # Réduire à 16 si problèmes mémoire
-    epochs: 10  # Early stopping interrompt si besoin
-  training_params:
-    earlyStopping:
-      enabled: true
-      monitor: val_loss
-      patience: 3
-      mode: min
-    learningRateScheduler:
-      enabled: true
-      factor: 5e-5  # Ajuster entre 3e-5 et 1e-4 si nécessaire
-      warmup_ratio: 0.1
-  mlflow:
-    trackingUri: http://mlflow.local
-    experiment:
-      name: sentiment-analysis
-      run:
-        name: distilbert
-        description: Training DistilBERT
-        tags:
-          model: distilbert
-          dataset: token_bert
-
-test_distilbert:
-  input_file: data/output/partitions/trainvaltest/glove_cleaned/test.csv
-  model_dir: data/output/experiments/bert_with_glove/model
-  output_file: data/output/experiments/bert_with_glove/metrics/metrics.json
-
-# Comparaison des modèles
-compare_models:
-  models_dirs:
-    - data/output/experiments/logistic_tfidf/model
-    - data/output/experiments/logistic_tfidf_glove/model
-    - data/output/experiments/lstm_with_glove/model
-    - data/output/experiments/bert_with_glove/model
-  output_file: data/output/reports/comparison.json
-
