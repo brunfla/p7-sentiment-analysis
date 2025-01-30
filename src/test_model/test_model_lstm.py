@@ -1,171 +1,213 @@
 import os
+import sys
 import json
 import logging
-import mlflow
 import pickle
-import pandas as pd
 import numpy as np
+import pandas as pd
+import mlflow
+
+# Pour le chargement du modèle Keras
 import tensorflow as tf
+from tensorflow.keras.models import load_model
+
+# Pour les métriques
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
     recall_score,
     f1_score,
     roc_auc_score,
-    average_precision_score,
-    roc_curve,
-    precision_recall_curve
+    confusion_matrix,
+    classification_report,
+    precision_recall_curve,
+    average_precision_score
 )
-from params_utils import load_params
-from logging_utils import get_logger
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Configurer le logger
+# ---------------------------------------------------
+# PARAMÈTRES & LOGGER
+# ---------------------------------------------------
+def load_params(params_file, section):
+    import yaml
+    with open(params_file, "r") as f:
+        params = yaml.safe_load(f)
+    return params[section]
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    return logger
+
 logger = get_logger(__name__)
 
-def load_model_run_id(run_id_file):
+# ---------------------------------------------------
+# FONCTION : Plot confusion matrix
+# ---------------------------------------------------
+def plot_confusion_matrix_custom(conf_matrix, class_names, output_dir, mlflow_on=True):
     """
-    Charger l'identifiant du modèle depuis un fichier JSON.
+    Génère un graphique de matrice de confusion et l'enregistre dans output_dir.
     """
-    if not os.path.exists(run_id_file):
-        raise FileNotFoundError(f"Fichier {run_id_file} introuvable.")
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
+                xticklabels=class_names, yticklabels=class_names)
+    plt.title("Matrice de confusion")
+    plt.xlabel("Prédictions")
+    plt.ylabel("Réel")
 
-    with open(run_id_file, "r") as f:
-        run_data = json.load(f)
-
-    run_id = run_data.get("run_id")
-    if not run_id:
-        raise ValueError(f"Clé 'run_id' manquante dans le fichier {run_id_file}.")
-
-    logger.info(f"Identifiant du modèle chargé : {run_id}")
-    return run_id
-
-def load_model(run_id, tracking_uri):
-    """
-    Charger le modèle TensorFlow depuis MLflow via un run_id.
-    """
-    logger.info(f"Chargement du modèle depuis MLflow avec run_id : {run_id}")
-    mlflow.set_tracking_uri(tracking_uri)
-    model_uri = f"runs:/{run_id}/model"
-    try:
-        model = mlflow.keras.load_model(model_uri)
-        logger.info(f"Modèle chargé avec succès depuis : {model_uri}")
-        return model
-    except mlflow.exceptions.MlflowException as e:
-        logger.error(f"Erreur MLflow lors du chargement du modèle : {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Erreur inattendue lors du chargement du modèle : {e}")
-        raise
-
-def compute_metrics(y_true, y_pred, y_scores, metrics_cfg):
-    """
-    Calculer les métriques demandées.
-    """
-    metrics = {}
-    if "accuracy" in metrics_cfg:
-        metrics["accuracy"] = accuracy_score(y_true, y_pred)
-    if "precision" in metrics_cfg:
-        metrics["precision"] = precision_score(y_true, y_pred)
-    if "recall" in metrics_cfg:
-        metrics["recall"] = recall_score(y_true, y_pred)
-    if "f1" in metrics_cfg:
-        metrics["f1"] = f1_score(y_true, y_pred)
-    if "roc_auc" in metrics_cfg and y_scores is not None:
-        metrics["roc_auc"] = roc_auc_score(y_true, y_scores)
-    if "pr_auc" in metrics_cfg and y_scores is not None:
-        metrics["pr_auc"] = average_precision_score(y_true, y_scores)
-    return metrics
-
-def save_metrics(output_file, metrics):
-    """
-    Sauvegarder les métriques dans un fichier JSON.
-    """
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, "w") as f:
-        json.dump(metrics, f, indent=4)
-    logger.info(f"Métriques sauvegardées dans : {output_file}")
-
-def plot_curves(y_true, y_scores, output_dir):
-    """
-    Générer et sauvegarder les courbes ROC et PR.
-    """
+    confusion_matrix_path = os.path.join(output_dir, "confusion_matrix.png")
     os.makedirs(output_dir, exist_ok=True)
-
-    # Courbe ROC
-    fpr, tpr, _ = roc_curve(y_true, y_scores)
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {roc_auc_score(y_true, y_scores):.2f})")
-    plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Random Classifier")
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.legend()
-    roc_path = os.path.join(output_dir, "roc_curve.png")
-    plt.savefig(roc_path)
-    logger.info(f"ROC curve saved to: {roc_path}")
+    plt.savefig(confusion_matrix_path)
     plt.close()
+    logger.info(f"Matrice de confusion sauvegardée dans : {confusion_matrix_path}")
 
-    # Courbe PR
-    precision, recall, _ = precision_recall_curve(y_true, y_scores)
-    plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision, label=f"PR Curve (AUC = {average_precision_score(y_true, y_scores):.2f})")
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.title("Precision-Recall Curve")
-    plt.legend()
-    pr_path = os.path.join(output_dir, "pr_curve.png")
-    plt.savefig(pr_path)
-    logger.info(f"Precision-Recall curve saved to: {pr_path}")
-    plt.close()
+    # Log artifact dans MLflow si actif
+    if mlflow_on:
+        mlflow.log_artifact(confusion_matrix_path)
 
-def evaluate_model(params):
-    """
-    Évaluer le modèle et générer les résultats.
-    """
-    # Charger les données de test
-    logger.info(f"Chargement des données de test depuis : {params['input_file']}")
-    with open(params["input_file"], "rb") as f:
-        test_data = pickle.load(f)
-    X_test, y_test = test_data["X"], test_data["y"]
-
-    # Construire les chemins dynamiques
-    mlflow_id_file = os.path.join(params["output_dir"], "model", "mlflow_id.json")
-    metrics_file = os.path.join(params["output_dir"], "metrics", "test_metrics.json")
-    plots_dir = os.path.join(params["output_dir"], "plots")
-
-    # Charger le modèle
-    model_run_id = load_model_run_id(mlflow_id_file)
-    model = load_model(model_run_id, params["mlflow"]["trackingUri"])
-
-    # Effectuer les prédictions
-    y_scores = model.predict(X_test).flatten()
-    y_pred = (y_scores >= params["threshold"]).astype(int)
-
-    # Calcul des métriques
-    metrics = compute_metrics(y_test, y_pred, y_scores, params["metrics"])
-
-    # Sauvegarder les métriques
-    save_metrics(metrics_file, metrics)
-
-    # Générer des plots
-    plot_curves(y_test, y_scores, plots_dir)
-
-    # Enregistrer dans MLflow
-    with mlflow.start_run(run_id=model_run_id):
-        for key, value in metrics.items():
-            mlflow.log_metric(key, value)
-        mlflow.log_artifact(metrics_file, artifact_path="metrics")
-        mlflow.log_artifact(os.path.join(plots_dir, "roc_curve.png"), artifact_path="plots")
-        mlflow.log_artifact(os.path.join(plots_dir, "pr_curve.png"), artifact_path="plots")
-    logger.info("Métriques et plots enregistrés dans MLflow.")
-
-
-
+# ---------------------------------------------------
+# SCRIPT PRINCIPAL
+# ---------------------------------------------------
 def main():
+    # 1) Charger la section de params "test_lstm_bidirectional_with_glove"
     params_file = "params.yaml"
-    params = load_params(params_file, "test_lstm_bidirectional_with_glove")
-    evaluate_model(params)
+    section = "test_lstm_bidirectional_with_glove"
+    params = load_params(params_file, section)
 
+    # 2) Extraire les infos
+    input_test_vec = params["input_test_vec"]
+    input_test_labels = params["input_test_labels"]
+    output_dir = params["output_dir"]
+    threshold = params.get("threshold", 0.5)
+
+    # MLflow
+    mlflow_conf = params.get("mlflow", {})
+    run_id = mlflow_conf.get("run_id", None)
+    tracking_uri = mlflow_conf.get("trackingUri", None)
+
+    # Liste de metrics demandées
+    requested_metrics = params.get("metrics", [])  # e.g. ["accuracy","precision","recall","f1","roc_auc","pr_auc"]
+
+    # 3) Charger le modèle Keras (.h5)
+    model_path = os.path.join(output_dir, "bilstm_model.h5")
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Modèle introuvable: {model_path}")
+    logger.info(f"Chargement du modèle Keras depuis: {model_path}")
+    model = load_model(model_path)
+    logger.info("Modèle BiLSTM chargé avec succès.")
+
+    # 4) Charger X_test (pkl) et y_test (csv)
+    if not os.path.exists(input_test_vec):
+        raise FileNotFoundError(f"Fichier introuvable: {input_test_vec}")
+    with open(input_test_vec, "rb") as f:
+        test_data = pickle.load(f)
+    X_test = test_data["vectors"]  # shape (N, max_seq_len, embedding_dim)
+    test_ids = test_data["ids"]
+
+    if not os.path.exists(input_test_labels):
+        raise FileNotFoundError(f"Fichier introuvable: {input_test_labels}")
+    df_y_test = pd.read_csv(input_test_labels)
+
+    # Synchroniser l'ordre X_test & y_test via "id"
+    label_map = dict(zip(df_y_test["id"], df_y_test["label"]))  # id -> label
+    y_test = []
+    for tid in test_ids:
+        y_test.append(label_map[tid])
+    y_test = np.array(y_test)
+
+    if len(y_test) != X_test.shape[0]:
+        raise ValueError("Incohérence du nombre d'exemples entre X_test et y_test.")
+
+    logger.info(f"Test samples: {X_test.shape[0]}, Input shape: {X_test.shape[1:]}")
+
+    # 5) Prédictions (probabilités)
+    logger.info("Prédiction du modèle sur X_test...")
+    y_proba = model.predict(X_test)  # shape (N,1)
+    y_proba = y_proba.flatten()      # shape (N,)
+
+    # Conversion en labels binaires
+    y_pred = (y_proba >= threshold).astype(int)
+
+    # 6) Lancement d'un run MLflow (si run_id est défini)
+    mlflow_on = (run_id is not None and tracking_uri is not None)
+    if mlflow_on:
+        mlflow.set_tracking_uri(tracking_uri)
+        mlflow.start_run(run_id=run_id)
+
+    # 7) Calculer les metrics demandées
+    metrics_result = {}
+
+    if "accuracy" in requested_metrics:
+        acc = accuracy_score(y_test, y_pred)
+        metrics_result["accuracy"] = acc
+        if mlflow_on: mlflow.log_metric("test_accuracy", acc)
+
+    if "precision" in requested_metrics:
+        prec = precision_score(y_test, y_pred, zero_division=0)
+        metrics_result["precision"] = prec
+        if mlflow_on: mlflow.log_metric("test_precision", prec)
+
+    if "recall" in requested_metrics:
+        rec = recall_score(y_test, y_pred, zero_division=0)
+        metrics_result["recall"] = rec
+        if mlflow_on: mlflow.log_metric("test_recall", rec)
+
+    if "f1" in requested_metrics:
+        f1 = f1_score(y_test, y_pred, zero_division=0)
+        metrics_result["f1"] = f1
+        if mlflow_on: mlflow.log_metric("test_f1", f1)
+
+    # Pour "roc_auc" et "pr_auc", on a besoin des probas
+    if "roc_auc" in requested_metrics:
+        try:
+            rocAuc = roc_auc_score(y_test, y_proba)
+            metrics_result["roc_auc"] = rocAuc
+            if mlflow_on: mlflow.log_metric("test_roc_auc", rocAuc)
+        except ValueError as e:
+            logger.warning(f"Impossible de calculer le roc_auc: {e}")
+
+    if "pr_auc" in requested_metrics:
+        try:
+            precision_vals, recall_vals, _ = precision_recall_curve(y_test, y_proba)
+            prAuc = average_precision_score(y_test, y_proba)
+            metrics_result["pr_auc"] = prAuc
+            if mlflow_on: mlflow.log_metric("test_pr_auc", prAuc)
+        except ValueError as e:
+            logger.warning(f"Impossible de calculer le pr_auc: {e}")
+
+    # 8) Matrice de confusion + classification report
+    logger.info("Calcul de la matrice de confusion...")
+    conf_mat = confusion_matrix(y_test, y_pred)
+    plot_confusion_matrix_custom(conf_mat,
+                                 class_names=["0","1"],
+                                 output_dir=output_dir,
+                                 mlflow_on=mlflow_on)
+
+    # (Optionnel) classification_report
+    report = classification_report(y_test, y_pred, target_names=["0","1"], zero_division=0)
+    logger.info("\n" + report)
+    if mlflow_on:
+        mlflow.log_text(report, artifact_file="classification_report.txt")
+
+    # 9) Sauvegarder un fichier JSON récap des metrics
+    metrics_json_path = os.path.join(output_dir, "test_metrics.json")
+    with open(metrics_json_path, "w") as f:
+        json.dump(metrics_result, f, indent=4)
+    logger.info(f"Métriques sauvegardées dans {metrics_json_path}")
+
+    # Fin du run MLflow
+    if mlflow_on:
+        mlflow.end_run()
+
+    logger.info("=== Fin du test ===")
+
+# ---------------------------------------------------
+# LAUNCH
+# ---------------------------------------------------
 if __name__ == "__main__":
     main()

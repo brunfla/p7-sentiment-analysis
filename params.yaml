@@ -58,17 +58,82 @@ batch_apply_tfidf_vectorizer:
   output_dir: data/output/preprocessed/tfidf_vectorizer
   max_length: 10000
 
-#batch_prepare_glove_vectors:
-#  glove_file: data/input/glove.twitter.27B.50d.txt
-#  input:
-#    train_file: data/output/partitions/train_val_test/train.csv
-#    val_file: data/output/partitions/train_val_test/val.csv
-#    test_file: data/output/partitions/train_val_test/test.csv
-#  output_dir: data/output/preprocessed/glove_vectors
-#  text_column: tweet
-#  label_column: id
-#  model_params:
-#    max_length: 50
+batch_prepare_glove_vectors:
+  glove_file: "data/input/glove.twitter.27B.50d.txt"
+  input_dir: "data/output/preprocessed/clean_tweet_glove"
+  input_files:
+    - "x_train.csv"
+    - "x_val.csv"
+    - "x_test.csv"
+    - "y_train.csv"
+    - "y_val.csv"
+    - "y_test.csv"
+  output_dir: "data/output/preprocessed/glove_vectors"
+  max_length: 10000
+  embedding_dim: 50
+
+train_lstm_bidirectional:
+  input_train_vec: data/output/preprocessed/glove_vectors/x_train_glove.pkl
+  input_train_labels: data/output/preprocessed/glove_vectors/y_train.csv
+  input_val_vec: data/output/preprocessed/glove_vectors/x_val_glove.pkl
+  input_val_labels: data/output/preprocessed/glove_vectors/y_val.csv
+  glove_file: data/input/glove.twitter.27B.50d.txt
+  output_dir: data/output/trained_models/lstm_bidirectional
+  model_params:
+    max_length: 15
+    lstm_units: [128, 64]
+    dropout_rate: 0.3
+    dense_units: 32
+    batch_size: 160
+    epochs: 5
+  training_params:
+    earlyStopping:
+      enabled: true
+      monitor: val_loss
+      patience: 3
+      mode: min
+    learningRateScheduler:
+      enabled: true
+      monitor: val_loss
+      factor: 0.5
+      patience: 2
+      min_lr: 1e-5
+    thresholdStop:
+      enabled: false  # Désactiver si pas implémenté dans le script
+      threshold: 0.6
+      metric: accuracy
+      patience_batches: 10
+  glove_params:
+    embedding_dim: 50
+    trainable: false
+  mlflow:
+    trackingUri: http://mlflow.local
+    experiment:
+      name: sentiment-analysis
+      run:
+        name: lstm_bidirectional
+        description: Training with bidirectional LSTM and GloVe embeddings
+        tags:
+          model: lstm_bidirectional
+          dataset: glove_vectors
+  data_params:
+    padding: post
+    truncating: post
+
+test_lstm_bidirectional_with_glove:
+  input_test_vec: data/output/preprocessed/glove_vectors/x_test_glove.pkl
+  input_test_labels: data/output/preprocessed/glove_vectors/y_test.csv 
+  output_dir: data/output/trained_models/lstm_bidirectional
+  threshold: 0.5
+  mlflow:
+    trackingUri: "http://mlflow.local"
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - pr_auc
 
 # Entraînement des modèles
 train_logistic_tfidf:
@@ -156,3 +221,12 @@ test_model_single_tweet:
     - f1
     - roc_auc
     - pr_auc
+
+build_and_test_api:
+  docker_file: Dockerfile
+  image_name: distilbert-base-uncased
+  tag_name: latest
+  input_test_features: data/output/preprocessed/clean_tweet_glove/x_test.csv 
+  input_test_labels: data/output/preprocessed/clean_tweet_glove/y_test.csv
+  test_script: src/deploy/test_api.py
+  registry_name: bflament # dockerhub) 

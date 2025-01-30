@@ -114,25 +114,46 @@ stages:
     - data/output/preprocessed/tfidf_vectorizer/y_test.csv
     - src/test_model/test_model_logistic.py  
 
-#  batch_prepare_glove_vectors:
-#    cmd: python src/data_preparation/batch_prepare_glove_vectors.py
-#    deps:
-#      - data/output/partitions/train_val_test/train.csv
-#      - data/output/partitions/train_val_test/val.csv
-#      - data/output/partitions/train_val_test/test.csv
-#      - data/input/glove.twitter.27B.50d.txt
-#      - src/data_preparation/batch_prepare_glove_vectors.py
-#      - src/data_preparation/glove_loader.py
-#    outs:
-#      - data/output/preprocessed/glove_vectors/
-#    params:
-#      - batch_prepare_glove_vectors.model_params.max_length
-#      - batch_prepare_glove_vectors.input.train_file
-#      - batch_prepare_glove_vectors.input.val_file
-#      - batch_prepare_glove_vectors.input.test_file
-#      - batch_prepare_glove_vectors.output_dir
+  batch_prepare_glove_vectors:
+    cmd: python src/data_preparation/batch_prepare_glove_vectors.py
+    deps:
+    - data/output/preprocessed/clean_tweet_glove/x_train.csv
+    - data/output/preprocessed/clean_tweet_glove/x_val.csv
+    - data/output/preprocessed/clean_tweet_glove/x_test.csv
+    - data/output/preprocessed/clean_tweet_glove/y_train.csv
+    - data/output/preprocessed/clean_tweet_glove/y_val.csv
+    - data/output/preprocessed/clean_tweet_glove/y_test.csv
+    - data/input/glove.twitter.27B.50d.txt
+    - src/data_preparation/batch_prepare_glove_vectors.py
+    outs:
+    - data/output/preprocessed/glove_vectors/x_train_glove.pkl
+    - data/output/preprocessed/glove_vectors/x_val_glove.pkl
+    - data/output/preprocessed/glove_vectors/x_test_glove.pkl
+    - data/output/preprocessed/glove_vectors/y_train.csv
+    - data/output/preprocessed/glove_vectors/y_val.csv
+    - data/output/preprocessed/glove_vectors/y_test.csv
+    params:
+    - batch_prepare_glove_vectors.glove_file
+    - batch_prepare_glove_vectors.max_length
+    - batch_prepare_glove_vectors.embedding_dim
 
-  
+  train_lstm_bidirectional_with_glove:
+    cmd: python src/train_model/train_lstm_bidirectional_with_glove.py
+    deps:
+    - data/output/preprocessed/glove_vectors/x_train_glove.pkl
+    - data/output/preprocessed/glove_vectors/x_val_glove.pkl
+    - data/output/preprocessed/glove_vectors/y_train.csv
+    - data/output/preprocessed/glove_vectors/y_val.csv
+    outs:
+    - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
+
+  test_lstm_bidirectional_with_glove:
+    cmd: python src/test_model/test_lstm_bidirectional_with_glove.py
+    deps:
+    - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
+    - data/output/preprocessed/glove_vectors/x_test_glove.pkl
+    - data/output/preprocessed/glove_vectors/y_test.csv
+
   train_model_distilbert_ktrain:
     cmd: python src/train_model/train_model_distilbert_ktrain.py
     deps:
@@ -142,12 +163,22 @@ stages:
     - data/output/preprocessed/clean_tweet_glove/y_val.csv
     - src/train_model/train_model_distilbert_ktrain.py
     outs:
-    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json        # Fichier contenant le Run ID MLflow
+    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json 
 
   test_model_distilbert_ktrain:
-    cmd:  python src/test_model/test_model_distilbert_ktrain.py
+    cmd: python src/test_model/test_model_distilbert_ktrain.py
     deps:
     - data/output/trained_models/distilbert-base-uncased/mlflow_id.json
     - data/output/preprocessed/clean_tweet_glove/x_test.csv
     - data/output/preprocessed/clean_tweet_glove/y_test.csv
     - src/test_model/test_model_distilbert_ktrain.py
+
+  build_and_test_api:
+    cmd: src/deploy/build_and_test_api.sh
+    deps:
+    - Dockerfile
+    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json
+    - data/output/preprocessed/clean_tweet_glove/x_test.csv
+    - data/output/preprocessed/clean_tweet_glove/y_test.csv
+    - src/deploy/test_api.py
+    - src/deploy/build_and_test_api.sh

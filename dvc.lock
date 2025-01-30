@@ -1008,44 +1008,77 @@ stages:
       md5: 6e8369db39aa3ea5f7cf06c1f3745b06
       size: 510887943
       isexec: true
-    - path: data/output/partitions/train_val_test/test.csv
+    - path: data/output/preprocessed/clean_tweet_glove/x_test.csv
       hash: md5
-      md5: bcdadbd639f66b01528bbd4785b85c65
-      size: 13489002
+      md5: 6a8f6ba51b6bede0db44b43902fb2dcb
+      size: 402918
       isexec: true
-    - path: data/output/partitions/train_val_test/train.csv
+    - path: data/output/preprocessed/clean_tweet_glove/x_train.csv
       hash: md5
-      md5: 41f253a6edd8100dcff5691145c33bb4
-      size: 47309654
+      md5: f7b4bf0031db29d1843bc068642fbb82
+      size: 75134077
       isexec: true
-    - path: data/output/partitions/train_val_test/val.csv
+    - path: data/output/preprocessed/clean_tweet_glove/x_val.csv
       hash: md5
-      md5: 1e9524c6ce15f8c80aedfe92640cbcad
-      size: 6770480
+      md5: 126d1a55256a85cdde7d1f8bed13536f
+      size: 5683133
+      isexec: true
+    - path: data/output/preprocessed/clean_tweet_glove/y_test.csv
+      hash: md5
+      md5: 9656a949435ccb3749a34ddcb5e57f51
+      size: 102111
+      isexec: true
+    - path: data/output/preprocessed/clean_tweet_glove/y_train.csv
+      hash: md5
+      md5: f93ac0b9e4f9467bf009230a2974197b
+      size: 18874202
+      isexec: true
+    - path: data/output/preprocessed/clean_tweet_glove/y_val.csv
+      hash: md5
+      md5: 35014977f4db01f12a6509fa83ff4b0a
+      size: 1427760
       isexec: true
     - path: src/data_preparation/batch_prepare_glove_vectors.py
       hash: md5
-      md5: acac9029cd5db446a874898c3c63fde3
-      size: 3320
-      isexec: true
-    - path: src/data_preparation/glove_loader.py
-      hash: md5
-      md5: f777afcbba8369e039f0f9e2d98bffa8
-      size: 578
+      md5: db0409c94ef120ff8254fe3995102ab3
+      size: 9105
       isexec: true
     params:
       params.yaml:
-        batch_prepare_glove_vectors.input.test_file: data/output/partitions/train_val_test/test.csv
-        batch_prepare_glove_vectors.input.train_file: data/output/partitions/train_val_test/train.csv
-        batch_prepare_glove_vectors.input.val_file: data/output/partitions/train_val_test/val.csv
-        batch_prepare_glove_vectors.model_params.max_length: 50
-        batch_prepare_glove_vectors.output_dir: data/output/preprocessed/glove_vectors
+        batch_prepare_glove_vectors.embedding_dim: 50
+        batch_prepare_glove_vectors.glove_file: data/input/glove.twitter.27B.50d.txt
+        batch_prepare_glove_vectors.max_length: 10000
     outs:
-    - path: data/output/preprocessed/glove_vectors/
+    - path: data/output/preprocessed/glove_vectors/x_test_glove.pkl
       hash: md5
-      md5: 6eaa7481b73abc32212492f51a105840.dir
-      size: 320734700
-      nfiles: 3
+      md5: 6765243b7c21ab4106e966299747f3f3
+      size: 23605764
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/x_train_glove.pkl
+      hash: md5
+      md5: 253d1cde7a724094418f651194e82082
+      size: 4363631513
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/x_val_glove.pkl
+      hash: md5
+      md5: 668b2264ee3dfd5ad66723316a0645fc
+      size: 330089308
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/y_test.csv
+      hash: md5
+      md5: 9656a949435ccb3749a34ddcb5e57f51
+      size: 102111
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/y_train.csv
+      hash: md5
+      md5: f93ac0b9e4f9467bf009230a2974197b
+      size: 18874202
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/y_val.csv
+      hash: md5
+      md5: 35014977f4db01f12a6509fa83ff4b0a
+      size: 1427760
+      isexec: true
   batch_prepare_bert_token:
     cmd: python src/data_preparation/batch_prepare_bert_tokens.py
     deps:

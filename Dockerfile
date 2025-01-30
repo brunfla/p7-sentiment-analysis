@@ -15,7 +15,6 @@ WORKDIR /app
 
 # Étape 3 : Copier les fichiers de l'application dans le conteneur
 COPY data/output/trained_models/distilbert-base-uncased/final_model /app/final_model 
-COPY api_requirements.txt /app/api_requirements.txt
 COPY src/deploy/api.py  /app/api.py
 
 # Étape 4 : Installer les dépendances
@@ -24,6 +23,9 @@ RUN pip install gunicorn==22.0.0
 RUN pip install ktrain==0.41.4
 RUN pip install transformers==4.18.0
 RUN pip install tf_keras==2.18.0
+RUN pip install opencensus==0.11.4
+RUN pip install opencensus-ext-azure==1.1.14
+RUN pip install opencensus-ext-flask==0.8.2
 #RUN pip install tensorflow-cpu==2.18.0
 
 # Étape 5 : Exposer le port utilisé par l'application
