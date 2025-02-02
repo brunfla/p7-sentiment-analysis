@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import logging
 import yaml
+import json
 
 # Keras / TensorFlow
 import tensorflow as tf
@@ -192,6 +193,7 @@ def main():
         run_tags = run_config.get("tags", {})
 
         mlflow_run = mlflow.start_run(run_name=run_name, tags=run_tags)
+        run = mlflow.active_run()
         if run_description:
             mlflow.set_tag("mlflow.note.content", run_description)
 
@@ -233,6 +235,15 @@ def main():
             "val_loss": final_val_loss,
             "val_accuracy": final_val_acc
         })
+
+        if run:
+            run_id = run.info.run_id
+            mlflow_id_path = os.path.join(output_dir, "mlflow_id.json")
+            with open(mlflow_id_path, "w") as f:
+                json.dump({"run_id": run_id}, f)
+            logger.info(f"MLflow run_id = {run_id} sauvegardé dans : {mlflow_id_path}")
+        else:
+            logger.error("Erreur : Impossible de récupérer l'ID du run MLflow.")
 
         # On peut aussi logger l'historique complet
         # for epoch_i in range(len(history.history["loss"])):

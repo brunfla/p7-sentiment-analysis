@@ -173,8 +173,9 @@ stages:
     - src/test_model/test_model_logistic.py  
 
   test_lstm_bidirectional_with_glove:
-    cmd: python src/test_model/test_lstm_bidirectional_with_glove.py
+    cmd: python src/test_model/test_model_lstm.py
     deps:
+    - data/output/trained_models/lstm_bidirectional/mlflow_id.json
     - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
     - data/output/preprocessed/glove_vectors/x_test_glove.pkl
     - data/output/preprocessed/glove_vectors/y_test.csv

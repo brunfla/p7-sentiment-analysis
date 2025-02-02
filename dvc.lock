@@ -628,12 +628,12 @@ stages:
     outs:
     - path: data/output/trained_models/logistic_sgd/mlflow_id.json
       hash: md5
-      md5: b15edd013d143de6979b03578662be0e
+      md5: 056cbb0906aaaa477bc1a82db5085e75
       size: 46
       isexec: true
     - path: data/output/trained_models/logistic_sgd/model.pkl
       hash: md5
-      md5: 96be2113af4086054df8b1f5fc6fd398.dir
+      md5: bb4862e8b4bbecb8318b8192864259c9.dir
       size: 914150
       nfiles: 5
   test_logistic_tfidf:
@@ -666,41 +666,35 @@ stages:
       size: 208
       nfiles: 1
   test_lstm_bidirectional_with_glove:
-    cmd: python scripts/test_lstm_bidirectional_with_glove.py
+    cmd: python src/test_model/test_model_lstm.py
     deps:
-    - path: data/output/experiments/lstm_with_glove/model/mlflow_id.json
+    - path: data/output/preprocessed/glove_vectors/x_test_glove.pkl
       hash: md5
-      md5: 34b3b2c87b6b5d280ff32351c4e00bd2
-      size: 48
+      md5: 6765243b7c21ab4106e966299747f3f3
+      size: 23605764
       isexec: true
-    - path: data/output/partitions/trainvaltest/glove_vectors/test.pkl
+    - path: data/output/preprocessed/glove_vectors/y_test.csv
       hash: md5
-      md5: 1fbb76de63924822d0f5d186b9bdafab
-      size: 127658005
+      md5: 9656a949435ccb3749a34ddcb5e57f51
+      size: 102111
       isexec: true
-    - path: scripts/test_lstm_bidirectional_with_glove.py
+    - path: data/output/trained_models/lstm_bidirectional/bilstm_model.h5
       hash: md5
-      md5: a7c083f4067370d589af1fd4dd7165bb
-      size: 5788
-      isexec: true
-    outs:
-    - path: data/output/experiments/lstm_with_glove/metrics/test_metrics.json
-      hash: md5
-      md5: 0fed01e61b9f28fd460be5bdc61744ad
-      size: 208
+      md5: 309e3f2e43bc3d2211e2972df8155276
+      size: 4286752
       isexec: true
   split_data_train_val_test:
-    cmd: "papermill notebooks/split_data_train_val_test.ipynb _ -p input_file data/input/training.1600000.processed.noemoticon.utf-8.csv
-      -p output_dir data/output/preprocessed/train_val_test/ -p text_column tweet
-      -p label_column id -p test_size 0.005 -p val_size 0.07 -p random_state 42  \
-      \    \n"
+    cmd: "papermill src/data_preparation/split_data_train_val_test.ipynb _ -p input_file
+      data/input/training.1600000.processed.noemoticon.utf-8.csv -p output_dir data/output/preprocessed/train_val_test/
+      -p text_column tweet -p label_column id -p test_size 0.005 -p val_size 0.07
+      -p random_state 42      \n"
     deps:
     - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
       hash: md5
       md5: 2404eb1a5fde3c5e9411b81f899c4980
       size: 238942690
       isexec: true
-    - path: notebooks/split_data_train_val_test.ipynb
+    - path: src/data_preparation/split_data_train_val_test.ipynb
       hash: md5
       md5: 71c9c007ec8a587362f3e3f7a626b47b
       size: 20355
@@ -1277,4 +1271,71 @@ stages:
       hash: md5
       md5: ed61f9b4b110165296605d3fa74cd42a
       size: 52
+      isexec: true
+  train_lstm_bidirectional_with_glove:
+    cmd: python src/train_model/train_lstm_bidirectional_with_glove.py
+    deps:
+    - path: data/output/preprocessed/glove_vectors/x_train_glove.pkl
+      hash: md5
+      md5: 253d1cde7a724094418f651194e82082
+      size: 4363631513
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/x_val_glove.pkl
+      hash: md5
+      md5: 668b2264ee3dfd5ad66723316a0645fc
+      size: 330089308
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/y_train.csv
+      hash: md5
+      md5: f93ac0b9e4f9467bf009230a2974197b
+      size: 18874202
+      isexec: true
+    - path: data/output/preprocessed/glove_vectors/y_val.csv
+      hash: md5
+      md5: 35014977f4db01f12a6509fa83ff4b0a
+      size: 1427760
+      isexec: true
+    outs:
+    - path: data/output/trained_models/lstm_bidirectional/bilstm_model.h5
+      hash: md5
+      md5: 309e3f2e43bc3d2211e2972df8155276
+      size: 4286752
+      isexec: true
+    - path: data/output/trained_models/lstm_bidirectional/mlflow_id.json
+      hash: md5
+      md5: 91faab009ad4b7dc70a1f60c14e26441
+      size: 46
+      isexec: true
+  build_and_test_api:
+    cmd: src/deploy/build_and_test_api.sh
+    deps:
+    - path: Dockerfile
+      hash: md5
+      md5: 20e4ce12912111aafd25d840262ba9cd
+      size: 1209
+      isexec: true
+    - path: data/output/preprocessed/clean_tweet_glove/x_test.csv
+      hash: md5
+      md5: 6a8f6ba51b6bede0db44b43902fb2dcb
+      size: 402918
+      isexec: true
+    - path: data/output/preprocessed/clean_tweet_glove/y_test.csv
+      hash: md5
+      md5: 9656a949435ccb3749a34ddcb5e57f51
+      size: 102111
+      isexec: true
+    - path: data/output/trained_models/distilbert-base-uncased/mlflow_id.json
+      hash: md5
+      md5: ed61f9b4b110165296605d3fa74cd42a
+      size: 52
+      isexec: true
+    - path: src/deploy/build_and_test_api.sh
+      hash: md5
+      md5: ce7021917b5716f258af76e7eae53eea
+      size: 1773
+      isexec: true
+    - path: src/deploy/test_api.py
+      hash: md5
+      md5: 55efddcc790dee5dfbe12eaba926a881
+      size: 1760
       isexec: true

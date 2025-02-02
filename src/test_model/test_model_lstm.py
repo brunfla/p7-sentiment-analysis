@@ -47,6 +47,24 @@ def get_logger(name):
 
 logger = get_logger(__name__)
 
+
+# --------------------------------------------------------------------
+# Charger run_id et modèle MLflow
+# --------------------------------------------------------------------
+def load_model_run_id(run_id_file):
+    """
+    Charger l'identifiant du modèle depuis un fichier JSON.
+    """
+    if not os.path.exists(run_id_file):
+        raise FileNotFoundError(f"Fichier {run_id_file} introuvable.")
+    with open(run_id_file, "r") as f:
+        run_data = json.load(f)
+    run_id = run_data.get("run_id")
+    if not run_id:
+        raise ValueError(f"Clé 'run_id' manquante dans le fichier {run_id_file}.")
+    logger.info(f"Identifiant du modèle chargé : {run_id}")
+    return run_id
+
 # ---------------------------------------------------
 # FONCTION : Plot confusion matrix
 # ---------------------------------------------------
@@ -88,7 +106,7 @@ def main():
 
     # MLflow
     mlflow_conf = params.get("mlflow", {})
-    run_id = mlflow_conf.get("run_id", None)
+    run_id = load_model_run_id(params["run_id_file"])
     tracking_uri = mlflow_conf.get("trackingUri", None)
 
     # Liste de metrics demandées

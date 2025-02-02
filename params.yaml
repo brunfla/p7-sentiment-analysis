@@ -126,8 +126,8 @@ test_lstm_bidirectional_with_glove:
   output_dir: data/output/trained_models/lstm_bidirectional
   model_file: bilstm_model.h5
   threshold: 0.5
+  run_id_file: data/output/trained_models/lstm_bidirectional/mlflow_id.json
   mlflow:
-    run_id: a738c40d3a4544bd9e68c3fc7ce2db92
     trackingUri: "http://mlflow.local"
   metrics:
     - accuracy
