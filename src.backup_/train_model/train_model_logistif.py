@@ -4,10 +4,10 @@ import mlflow.sklearn
 import logging
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
-import pickle
+from scipy.sparse import load_npz
+import pandas as pd
 import json
 import sys
-import numpy as np
 
 # Charger les paramètres depuis params.yaml
 def load_params(params_file, section):
@@ -18,6 +18,7 @@ def load_params(params_file, section):
 
 # Configurer le logger
 def get_logger(name):
+    import logging
     logger = logging.getLogger(name)
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
@@ -29,25 +30,19 @@ def get_logger(name):
 # Obtenir le logger
 logger = get_logger(__name__)
 
-def train_logistic_regression_incremental(params):
+def train_logistic_regression_incremental(input_train_file, input_val_file, output_dir, model_type, tuning_cfg, mlflow_cfg, chunksize=10000):
     """
     Entraîne un modèle de régression logistique de manière incrémentale avec des données TF-IDF prétraitées.
 
     Args:
-        params (dict): Dictionnaire contenant les paramètres nécessaires à l'entraînement.
+        input_train_file (str): Chemin vers le fichier d'entraînement TF-IDF.
+        input_val_file (str): Chemin vers le fichier de validation TF-IDF.
+        output_dir (str): Répertoire pour sauvegarder le modèle.
+        model_type (str): Type de modèle, ici "logistic_regression".
+        tuning_cfg (dict): Configuration des hyperparamètres du modèle.
+        mlflow_cfg (dict): Configuration pour le suivi avec MLflow.
+        chunksize (int): Taille des lots pour l'entraînement incrémental.
     """
-    try:
-        input_train_file = params["input_train_file"]
-        input_val_file = params["input_val_file"]
-        output_dir = params["output_dir"]
-        model_type = params["model_type"]
-        tuning_cfg = params.get("tuning", {})
-        mlflow_cfg = params.get("mlflow", {})
-        chunksize = 10000
-    except KeyError as e:
-        logger.error(f"Clé manquante dans les paramètres : {e}")
-        sys.exit(1)
-
     # Configuration initiale
     logger.info(f"Chargement des données d'entraînement depuis : {input_train_file}")
     logger.info(f"Chargement des données de validation depuis : {input_val_file}")
@@ -57,15 +52,16 @@ def train_logistic_regression_incremental(params):
     model = SGDClassifier(loss="log_loss", max_iter=tuning_cfg.get("max_iter", 1000), tol=tuning_cfg.get("tol", 1e-3))
 
     total_samples = 0
+    all_predictions = []
+    all_labels = []
 
     with mlflow.start_run(run_name=mlflow_cfg["experiment"]["run"]["name"], description=mlflow_cfg["experiment"]["run"]["description"]) as run:
         mlflow.set_tags(mlflow_cfg["experiment"]["run"].get("tags", {}))
 
         # Charger les données d'entraînement
-        with open(input_train_file, "rb") as f:
-            train_data = pickle.load(f)
-            X_train = train_data["vectors"]
-            y_train = np.array(train_data["ids"])
+        train_data = pd.read_pickle(input_train_file)
+        X_train = train_data['features']
+        y_train = train_data['labels']
 
         # Entraînement incrémental
         for start in range(0, X_train.shape[0], chunksize):
@@ -74,18 +70,16 @@ def train_logistic_regression_incremental(params):
             y_chunk = y_train[start:end]
 
             if total_samples == 0:
-                model.partial_fit(X_chunk, y_chunk, classes=np.unique(y_train))
+                model.partial_fit(X_chunk, y_chunk, classes=pd.unique(y_train))
             else:
                 model.partial_fit(X_chunk, y_chunk)
 
             total_samples += len(y_chunk)
 
         # Évaluation sur les données de validation
-        with open(input_val_file, "rb") as f:
-            val_data = pickle.load(f)
-            X_val = val_data["vectors"]
-            y_val = np.array(val_data["ids"])
-
+        val_data = pd.read_pickle(input_val_file)
+        X_val = val_data['features']
+        y_val = val_data['labels']
         val_predictions = model.predict(X_val)
         val_accuracy = accuracy_score(y_val, val_predictions)
         logger.info(f"Accuracy sur les données de validation : {val_accuracy:.4f}")
@@ -120,5 +114,16 @@ if __name__ == "__main__":
         logger.error(f"Erreur dans le fichier des paramètres : {e}")
         sys.exit(1)
 
+    try:
+        input_train_file = params["input_train_file"]
+        input_val_file = params["input_val_file"]
+        output_dir = params["output_dir"]
+        model_type = params["model_type"]
+        tuning_cfg = params.get("tuning", {})
+        mlflow_cfg = params.get("mlflow", {})
+    except KeyError as e:
+        logger.error(f"Clé manquante dans la section '{section}': {e}")
+        sys.exit(1)
+
     # Entraînement incrémental
-    train_logistic_regression_incremental(params)
+    train_logistic_regression_incremental(input_train_file, input_val_file, output_dir, model_type, tuning_cfg, mlflow_cfg)

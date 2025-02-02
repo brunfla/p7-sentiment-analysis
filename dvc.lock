@@ -690,17 +690,20 @@ stages:
       size: 208
       isexec: true
   split_data_train_val_test:
-    cmd: python src/data_preparation/split_data_train_val_test.py
+    cmd: "papermill notebooks/split_data_train_val_test.ipynb _ -p input_file data/input/training.1600000.processed.noemoticon.utf-8.csv
+      -p output_dir data/output/preprocessed/train_val_test/ -p text_column tweet
+      -p label_column id -p test_size 0.005 -p val_size 0.07 -p random_state 42  \
+      \    \n"
     deps:
     - path: data/input/training.1600000.processed.noemoticon.utf-8.csv
       hash: md5
       md5: 2404eb1a5fde3c5e9411b81f899c4980
       size: 238942690
       isexec: true
-    - path: src/data_preparation/split_data_train_val_test.py
+    - path: notebooks/split_data_train_val_test.ipynb
       hash: md5
-      md5: 6f8ae61a5697c98396a11e53223c871b
-      size: 5538
+      md5: 71c9c007ec8a587362f3e3f7a626b47b
+      size: 20355
       isexec: true
     params:
       params.yaml:

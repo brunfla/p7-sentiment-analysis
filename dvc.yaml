@@ -1,14 +1,21 @@
-plots:
-  - data/output/experiments/logistic_tfidf/plots/metrics_plot.png
-  - data/output/experiments/distilbert/plots/metrics_plot.png
-  
 stages:
+# --------------------------------------------------------------------
+## DATA PREPARATION
+# --------------------------------------------------------------------
 # Diviser les données en ensembles d'entraînement, validation et test.
   split_data_train_val_test:
-    cmd: python src/data_preparation/split_data_train_val_test.py
+    cmd: >
+      papermill src/data_preparation/split_data_train_val_test.ipynb _
+      -p input_file data/input/training.1600000.processed.noemoticon.utf-8.csv
+      -p output_dir data/output/preprocessed/train_val_test/
+      -p text_column ${split_data_train_val_test.text_column}
+      -p label_column ${split_data_train_val_test.label_column}
+      -p test_size ${split_data_train_val_test.test_size}
+      -p val_size ${split_data_train_val_test.val_size}
+      -p random_state ${split_data_train_val_test.random_state}      
     deps:
       - data/input/training.1600000.processed.noemoticon.utf-8.csv
-      - src/data_preparation/split_data_train_val_test.py
+      - src/data_preparation/split_data_train_val_test.ipynb
     outs:
       - data/output/preprocessed/train_val_test/x_train.csv
       - data/output/preprocessed/train_val_test/y_train.csv
@@ -95,25 +102,6 @@ stages:
     params:
     - batch_apply_tfidf_vectorizer.max_length
 
-  train_logistic_tfidf:
-    cmd: python src/train_model/train_logistic_tfidf.py
-    deps:
-    - data/output/preprocessed/tfidf_vectorizer/x_train_vec.pkl
-    - data/output/preprocessed/tfidf_vectorizer/x_val_vec.pkl
-    - data/output/preprocessed/tfidf_vectorizer/y_train.csv
-    - data/output/preprocessed/tfidf_vectorizer/y_val.csv
-    - src/train_model/train_logistic_tfidf.py
-    outs:
-    - data/output/trained_models/logistic_sgd/mlflow_id.json
-    - data/output/trained_models/logistic_sgd/model.pkl
-
-  test_model_logistic:
-    cmd: python src/test_model/test_model_logistic.py
-    deps:
-    - data/output/preprocessed/tfidf_vectorizer/x_test_vec.pkl
-    - data/output/preprocessed/tfidf_vectorizer/y_test.csv
-    - src/test_model/test_model_logistic.py  
-
   batch_prepare_glove_vectors:
     cmd: python src/data_preparation/batch_prepare_glove_vectors.py
     deps:
@@ -137,6 +125,21 @@ stages:
     - batch_prepare_glove_vectors.max_length
     - batch_prepare_glove_vectors.embedding_dim
 
+# --------------------------------------------------------------------
+## TRAIN_MODEL
+# --------------------------------------------------------------------
+  train_logistic_tfidf:
+    cmd: python src/train_model/train_logistic_tfidf.py
+    deps:
+    - data/output/preprocessed/tfidf_vectorizer/x_train_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/x_val_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/y_train.csv
+    - data/output/preprocessed/tfidf_vectorizer/y_val.csv
+    - src/train_model/train_logistic_tfidf.py
+    outs:
+    - data/output/trained_models/logistic_sgd/mlflow_id.json
+    - data/output/trained_models/logistic_sgd/model.pkl
+
   train_lstm_bidirectional_with_glove:
     cmd: python src/train_model/train_lstm_bidirectional_with_glove.py
     deps:
@@ -145,14 +148,8 @@ stages:
     - data/output/preprocessed/glove_vectors/y_train.csv
     - data/output/preprocessed/glove_vectors/y_val.csv
     outs:
+    - data/output/trained_models/lstm_bidirectional/mlflow_id.json
     - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
-
-  test_lstm_bidirectional_with_glove:
-    cmd: python src/test_model/test_lstm_bidirectional_with_glove.py
-    deps:
-    - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
-    - data/output/preprocessed/glove_vectors/x_test_glove.pkl
-    - data/output/preprocessed/glove_vectors/y_test.csv
 
   train_model_distilbert_ktrain:
     cmd: python src/train_model/train_model_distilbert_ktrain.py
@@ -163,7 +160,24 @@ stages:
     - data/output/preprocessed/clean_tweet_glove/y_val.csv
     - src/train_model/train_model_distilbert_ktrain.py
     outs:
-    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json 
+    - data/output/trained_models/distilbert-base-uncased/mlflow_id.json
+
+# --------------------------------------------------------------------
+## TEST_MODEL
+# --------------------------------------------------------------------
+  test_model_logistic:
+    cmd: python src/test_model/test_model_logistic.py
+    deps:
+    - data/output/preprocessed/tfidf_vectorizer/x_test_vec.pkl
+    - data/output/preprocessed/tfidf_vectorizer/y_test.csv
+    - src/test_model/test_model_logistic.py  
+
+  test_lstm_bidirectional_with_glove:
+    cmd: python src/test_model/test_lstm_bidirectional_with_glove.py
+    deps:
+    - data/output/trained_models/lstm_bidirectional/bilstm_model.h5
+    - data/output/preprocessed/glove_vectors/x_test_glove.pkl
+    - data/output/preprocessed/glove_vectors/y_test.csv
 
   test_model_distilbert_ktrain:
     cmd: python src/test_model/test_model_distilbert_ktrain.py
@@ -173,6 +187,9 @@ stages:
     - data/output/preprocessed/clean_tweet_glove/y_test.csv
     - src/test_model/test_model_distilbert_ktrain.py
 
+# --------------------------------------------------------------------
+## API
+# --------------------------------------------------------------------
   build_and_test_api:
     cmd: src/deploy/build_and_test_api.sh
     deps:

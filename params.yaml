@@ -124,8 +124,10 @@ test_lstm_bidirectional_with_glove:
   input_test_vec: data/output/preprocessed/glove_vectors/x_test_glove.pkl
   input_test_labels: data/output/preprocessed/glove_vectors/y_test.csv 
   output_dir: data/output/trained_models/lstm_bidirectional
+  model_file: bilstm_model.h5
   threshold: 0.5
   mlflow:
+    run_id: a738c40d3a4544bd9e68c3fc7ce2db92
     trackingUri: "http://mlflow.local"
   metrics:
     - accuracy

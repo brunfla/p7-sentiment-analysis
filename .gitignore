@@ -8,6 +8,7 @@ scripts/*id*.json
 *.csv
 .vscode/
 *.backup
+
 # Fichiers cachés et temporaires
 __pycache__/
 *.pyc
@@ -37,4 +38,4 @@ dvc_plots
 models/*
 !models/*.dvc
 
-ops/actions-runner/
+actions-runner/
