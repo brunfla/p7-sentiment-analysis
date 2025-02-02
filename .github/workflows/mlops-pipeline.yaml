@@ -7,7 +7,7 @@ on:
   workflow_dispatch:  # Permet de lancer manuellement le workflow depuis l'interface GitHub Actions.
 
 jobs:
-  custom-docker-env:
+  sentiment-analysis:
     runs-on: self-hosted  # Utilisation d'un runner self-hosted pour exécuter le pipeline.
 
     steps:
@@ -25,5 +25,3 @@ jobs:
 
       - name: Launch pipeline
         run: dvc repro
-
-

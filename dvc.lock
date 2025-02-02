@@ -683,6 +683,11 @@ stages:
       md5: 309e3f2e43bc3d2211e2972df8155276
       size: 4286752
       isexec: true
+    - path: data/output/trained_models/lstm_bidirectional/mlflow_id.json
+      hash: md5
+      md5: 91faab009ad4b7dc70a1f60c14e26441
+      size: 46
+      isexec: true
   split_data_train_val_test:
     cmd: "papermill src/data_preparation/split_data_train_val_test.ipynb _ -p input_file
       data/input/training.1600000.processed.noemoticon.utf-8.csv -p output_dir data/output/preprocessed/train_val_test/
