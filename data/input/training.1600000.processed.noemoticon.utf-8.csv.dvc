@@ -1,0 +1,6 @@
+outs:
+- md5: 2404eb1a5fde3c5e9411b81f899c4980
+  size: 238942690
+  isexec: true
+  hash: md5
+  path: training.1600000.processed.noemoticon.utf-8.csv

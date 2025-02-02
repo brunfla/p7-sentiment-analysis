@@ -1,0 +1,6 @@
+outs:
+- md5: 6e8369db39aa3ea5f7cf06c1f3745b06
+  size: 510887943
+  isexec: true
+  hash: md5
+  path: glove.twitter.27B.50d.txt
